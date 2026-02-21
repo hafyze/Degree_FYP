@@ -5,16 +5,44 @@
 
 	let form = {
 		manufacturer_name: '',
-		car_age: 5,
-		engine_capacity: 1.8,
-		odometer_value: 80000,
-		total_features: 5,
-		luxury_score: 2
+		car_age: 0,
+		engine_capacity: 1.0,
+		odometer_value: 0,
+		has_warranty: 0,
+		is_exchangeable: 0,
+		feature_0: 0,
+		feature_1: 0,
+		feature_2: 0,
+		feature_3: 0,
+		feature_4: 0,
+		feature_5: 0,
+		feature_6: 0,
+		feature_7: 0,
+		feature_8: 0,
+		feature_9: 0
 	};
+
+	//  Feature labels
+	const featureLabels = [
+		'Sunroof',
+		'Leather Seats',
+		'Navigation System',
+		'Apple Carplay / Android Auto',
+		'Backup Camera',
+		'Parking Sensors',
+		'360 Camera',
+		'Keyless Entry',
+		'Adaptive Cruise Control',
+		'Cruise Control'
+	];
 
 	let predictedPrice: number | null = null;
 	let loading = false;
 	let error = '';
+
+	function toggleFeature(index: number, checked: boolean) {
+		(form as any)[`feature_${index}`] = checked ? 1 : 0;
+	}
 
 	// load manufacturers
 	onMount(async () => {
@@ -115,6 +143,29 @@
 						class="w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500"
 						bind:value={form.odometer_value}
 					/>
+				</div>
+
+				<!-- Features Section -->
+				<div>
+					<label for="features" class="mb-2 block text-sm font-medium text-gray-700">
+						Vehicle Features
+					</label>
+
+					<div class="grid grid-cols-2 gap-3 md:grid-cols-3">
+						{#each featureLabels as label, i}
+							<label
+								class="flex items-center gap-2 rounded-lg border p-3 hover:bg-gray-50 cursor-pointer"
+							>
+								<input
+									id="features"
+									type="checkbox"
+									class="h-4 w-4"
+									on:change={(e) => toggleFeature(i, e.currentTarget.checked)}
+								/>
+								<span class="text-sm text-gray-700">{label}</span>
+							</label>
+						{/each}
+					</div>
 				</div>
 			</div>
 

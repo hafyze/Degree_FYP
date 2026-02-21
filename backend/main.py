@@ -30,7 +30,6 @@ class CarInput(BaseModel):
     engine_capacity: float
     odometer_value: float
 
-    engine_has_gas: int
     has_warranty: int
     is_exchangeable: int
 
@@ -118,3 +117,17 @@ manufacturers = sorted(df_ref["manufacturer_name"].dropna().unique())
 @app.get("/manufacturers")
 def get_manufacturers():
     return {"manufacturers": manufacturers}
+
+# =========================
+# Build manufacturer → models map
+# =========================
+model_map = (
+    df_ref.groupby("manufacturer_name")["model_name"]
+    .apply(lambda x: sorted(x.dropna().unique()))
+    .to_dict()
+)
+
+@app.get("/models/{manufacturer}")
+def get_models(manufacturer: str):
+    models = model_map.get(manufacturer, [])
+    return {"models": models}
