@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 
 	let manufacturers: string[] = [];
-
+	let models: string[] = [];
 	let form = {
 		manufacturer_name: '',
 		car_age: 0,
@@ -54,6 +54,7 @@
 			// set default
 			if (manufacturers.length > 0) {
 				form.manufacturer_name = manufacturers[0];
+				await loadModels(form.manufacturer_name);
 			}
 		} catch (e) {
 			console.error('Failed to load manufacturers', e);
@@ -83,6 +84,21 @@
 			loading = false;
 		}
 	}
+
+	async function loadModels(manufacturer: string) {
+		try {
+			const res = await fetch(`http://127.0.0.1:8000/models/${manufacturer}`);
+			const data = await res.json();
+			models = data.models;
+		} catch (e) {
+			console.error('Failed to load models', e);
+			models = [];
+		}
+	}
+
+	$: if (form.manufacturer_name) {
+		loadModels(form.manufacturer_name);
+	}
 </script>
 
 <div class="min-h-screen bg-gray-50 px-4 py-10">
@@ -111,6 +127,21 @@
 					</select>
 				</div>
 
+				<!-- Model -->
+				<div>
+					<label for="model" class="mb-1 block text-sm font-medium text-gray-700">
+						Model
+					</label>
+
+					<select
+						id="model" class="w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500"
+					>
+						<option value="">Select model</option>
+						{#each models as m}
+							<option value={m}>{m}</option>
+						{/each}
+					</select>
+				</div>
 				<!-- Car Age -->
 				<div>
 					<label for="age" class="mb-1 block text-sm font-medium text-gray-700"> Car Age (years) </label>

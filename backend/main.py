@@ -73,6 +73,42 @@ def prepare_features(data: dict):
 
     return total_features, luxury_score
 
+def generate_depreciation_curve(data: dict, max_age: int = 15):
+    """Generate predicted price vs age curve"""
+
+    total_features, luxury_score = prepare_features(data)
+
+    prices = []
+    ages = list(range(0, max_age + 1))
+
+    for age in ages:
+        model_input = {
+            "manufacturer_name": data["manufacturer_name"],
+            "car_age": age,
+            "engine_capacity": data["engine_capacity"],
+            "odometer_value": data["odometer_value"],
+            "total_features": total_features,
+            "luxury_score": luxury_score,
+        }
+
+        df_input = pd.DataFrame([model_input])
+        pred_log = model.predict(df_input)
+        pred_real = np.expm1(pred_log)
+
+        prices.append(round(float(pred_real[0]), 2))
+
+    return {"ages": ages, "prices": prices}
+
+@app.post("/depreciation")
+def get_depreciation(car: CarInput):
+    data = car.dict()
+
+    # auto derive gas if you added earlier
+    data["engine_has_gas"] = int(data["engine_capacity"] > 0)
+
+    curve = generate_depreciation_curve(data)
+
+    return curve
 
 # =========================
 # Routes
