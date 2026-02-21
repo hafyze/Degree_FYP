@@ -1,6 +1,9 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import Chart from 'chart.js/auto';
+	import { onMount, tick } from 'svelte';
 
+	let depreciationChart: any = null;
+	let chartCanvas: HTMLCanvasElement;
 	let manufacturers: string[] = [];
 	let models: string[] = [];
 	let form = {
@@ -44,6 +47,96 @@
 		(form as any)[`feature_${index}`] = checked ? 1 : 0;
 	}
 
+	function renderChart(data: { ages: number[]; prices: number[] }) {
+		if (!chartCanvas) return;
+
+		const currentYear = new Date().getFullYear();
+		const currentCarAge = form.car_age;
+
+		//
+		const points = data.ages
+			.map((age, i) => {
+				const yearOffset = age - currentCarAge;
+				const year = currentYear + yearOffset;
+				return {
+					year,
+					price: data.prices[i],
+					offset: yearOffset
+				};
+			})
+			.filter((p) => p.offset >= 0);
+
+		const labels = points.map((p) => p.year);
+		const prices = points.map((p) => p.price);
+
+		if (depreciationChart) {
+			depreciationChart.destroy();
+		}
+
+		depreciationChart = new Chart(chartCanvas, {
+			type: 'line',
+			data: {
+				labels,
+				datasets: [
+					{
+						label: 'Projected Vehicle Value',
+						data: prices,
+						borderWidth: 3,
+						tension: 0.35,
+						fill: {
+							target: 'origin',
+							above: 'rgba(59, 130, 246, 0.08)'
+						},
+						pointRadius: 3,
+						pointHoverRadius: 5
+					},
+					{
+						label: 'Current Estimated Value',
+						data: prices.map((p, i) => (i === 0 ? p : null)),
+						pointRadius: 7,
+						pointHoverRadius: 9,
+						showLine: false
+					}
+				]
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				interaction: {
+					mode: 'index',
+					intersect: false
+				},
+				plugins: {
+					legend: {
+						display: true
+					},
+					tooltip: {
+						callbacks: {
+							label: (ctx) => `$${ctx.parsed.y !== null ? ctx.parsed.y.toLocaleString() : '0'}`
+						}
+					}
+				},
+				scales: {
+					x: {
+						title: {
+							display: true,
+							text: 'Year'
+						}
+					},
+					y: {
+						title: {
+							display: true,
+							text: 'Estimated Price (USD)'
+						},
+						ticks: {
+							callback: (value: any) => '$' + Number(value).toLocaleString()
+						}
+					}
+				}
+			}
+		});
+	}
+
 	// load manufacturers
 	onMount(async () => {
 		try {
@@ -77,6 +170,17 @@
 
 			const data = await res.json();
 			predictedPrice = data.predicted_price_usd;
+
+			await tick();
+
+			const depRes = await fetch('http://127.0.0.1:8000/depreciation', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(form)
+			});
+
+			const depData = await depRes.json();
+			renderChart(depData);
 		} catch (e) {
 			error = 'Prediction failed. Check API.';
 			console.error(e);
@@ -115,7 +219,9 @@
 				<!-- Manufacturer -->
 				<!-- Manufacturer -->
 				<div>
-					<label for="manufacturer" class="mb-1 block text-sm font-medium text-gray-700"> Manufacturer </label>
+					<label for="manufacturer" class="mb-1 block text-sm font-medium text-gray-700">
+						Manufacturer
+					</label>
 					<select
 						id="manufacturer"
 						class="w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500"
@@ -129,12 +235,11 @@
 
 				<!-- Model -->
 				<div>
-					<label for="model" class="mb-1 block text-sm font-medium text-gray-700">
-						Model
-					</label>
+					<label for="model" class="mb-1 block text-sm font-medium text-gray-700"> Model </label>
 
 					<select
-						id="model" class="w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500"
+						id="model"
+						class="w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500"
 					>
 						<option value="">Select model</option>
 						{#each models as m}
@@ -144,7 +249,9 @@
 				</div>
 				<!-- Car Age -->
 				<div>
-					<label for="age" class="mb-1 block text-sm font-medium text-gray-700"> Car Age (years) </label>
+					<label for="age" class="mb-1 block text-sm font-medium text-gray-700">
+						Car Age (years)
+					</label>
 					<input
 						id="age"
 						type="number"
@@ -155,7 +262,9 @@
 
 				<!-- Engine Capacity -->
 				<div>
-					<label for="engine_capacity" class="mb-1 block text-sm font-medium text-gray-700"> Engine Capacity (L) </label>
+					<label for="engine_capacity" class="mb-1 block text-sm font-medium text-gray-700">
+						Engine Capacity (L)
+					</label>
 					<input
 						id="engine_capacity"
 						type="number"
@@ -167,7 +276,9 @@
 
 				<!-- Mileage -->
 				<div>
-					<label for="mileage" class="mb-1 block text-sm font-medium text-gray-700"> Mileage (km) </label>
+					<label for="mileage" class="mb-1 block text-sm font-medium text-gray-700">
+						Mileage (km)
+					</label>
 					<input
 						id="mileage"
 						type="number"
@@ -185,7 +296,7 @@
 					<div class="grid grid-cols-2 gap-3 md:grid-cols-3">
 						{#each featureLabels as label, i}
 							<label
-								class="flex items-center gap-2 rounded-lg border p-3 hover:bg-gray-50 cursor-pointer"
+								class="flex cursor-pointer items-center gap-2 rounded-lg border p-3 hover:bg-gray-50"
 							>
 								<input
 									id="features"
@@ -216,6 +327,18 @@
 					<p class="mt-1 text-2xl font-bold text-green-800">
 						${predictedPrice.toLocaleString()}
 					</p>
+				</div>
+			{/if}
+
+			<!-- Car Depreciation Prediction -->
+			{#if predictedPrice !== null}
+				<div class="mt-6 rounded-2xl bg-white p-6 shadow">
+					<h3 class="mb-4 text-lg font-semibold text-gray-800">Expected Depreciation Curve</h3>
+
+					<!-- fixed height wrapper -->
+					<div class="relative h-80 w-full">
+						<canvas bind:this={chartCanvas}></canvas>
+					</div>
 				</div>
 			{/if}
 
