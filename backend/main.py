@@ -26,6 +26,7 @@ app.add_middleware(
 # =========================
 class CarInput(BaseModel):
     manufacturer_name: str
+    model_name_grouped: str
     car_age: float
     engine_capacity: float
     odometer_value: float
@@ -84,6 +85,7 @@ def generate_depreciation_curve(data: dict, max_age: int = 15):
     for age in ages:
         model_input = {
             "manufacturer_name": data["manufacturer_name"],
+            "model_name_grouped": data["model_name_grouped"],
             "car_age": age,
             "engine_capacity": data["engine_capacity"],
             "odometer_value": data["odometer_value"],
@@ -120,13 +122,14 @@ def root():
 
 @app.post("/predict")
 def predict_price(car: CarInput):
-    data = car.dict()
-
+    data = car.model_dump()
+    print("Data: ", data)
     #  compute engineered features
     total_features, luxury_score = prepare_features(data)
 
     model_input = {
         "manufacturer_name": data["manufacturer_name"],
+        "model_name_grouped": data["model_name_grouped"],
         "car_age": data["car_age"],
         "engine_capacity": data["engine_capacity"],
         "odometer_value": data["odometer_value"],

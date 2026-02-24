@@ -8,6 +8,7 @@
 	let models: string[] = [];
 	let form = {
 		manufacturer_name: '',
+		model_name_grouped: '',
 		car_age: 0,
 		engine_capacity: 1.0,
 		odometer_value: 0,
@@ -147,7 +148,6 @@
 			// set default
 			if (manufacturers.length > 0) {
 				form.manufacturer_name = manufacturers[0];
-				await loadModels(form.manufacturer_name);
 			}
 		} catch (e) {
 			console.error('Failed to load manufacturers', e);
@@ -160,6 +160,7 @@
 		predictedPrice = null;
 
 		try {
+			console.log("Form: ", form)
 			const res = await fetch('http://127.0.0.1:8000/predict', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
@@ -194,13 +195,19 @@
 			const res = await fetch(`http://127.0.0.1:8000/models/${manufacturer}`);
 			const data = await res.json();
 			models = data.models;
+
+			if (models.length > 0) {
+				form.model_name_grouped = models[0];
+			}
 		} catch (e) {
 			console.error('Failed to load models', e);
 			models = [];
 		}
 	}
 
-	$: if (form.manufacturer_name) {
+	let lastManufacturer = '';
+	$: if (form.manufacturer_name && form.manufacturer_name !== lastManufacturer) {
+		lastManufacturer = form.manufacturer_name;
 		loadModels(form.manufacturer_name);
 	}
 </script>
@@ -240,6 +247,7 @@
 					<select
 						id="model"
 						class="w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500"
+						bind:value={form.model_name_grouped}
 					>
 						<option value="">Select model</option>
 						{#each models as m}
