@@ -2,6 +2,7 @@
 	import { onMount, tick } from 'svelte';
 	import * as Command from '$lib/components/ui/command';
 	import * as Popover from '$lib/components/ui/popover';
+	import * as ScrollArea from '$lib/components/ui/scroll-area';
 	import * as Chart from '$lib/components/ui/chart';
 	import { Button } from '$lib/components/ui/button';
 	import { cn } from '$lib/utils';
@@ -560,7 +561,7 @@
 					{/if}
 
 					<div class="flex items-center justify-between border-t border-white/10 pt-5">
-						<p class="text-sm text-slate-500">Dataset-backed filters and recommendation request.</p>
+						<p class="text-sm text-slate-500">Dataset filter and recommendation system.</p>
 						<Button
 							type="submit"
 							size="lg"
@@ -584,7 +585,12 @@
 					</div>
 				</div>
 
-				<div class="mt-4 space-y-3 lg:max-h-[31rem] lg:overflow-y-auto lg:pr-1">
+				<ScrollArea.Root
+					class="mt-4 lg:h-124"
+					orientation="vertical"
+					scrollbarYClasses="w-2.5"
+				>
+					<div class="space-y-3 pr-3">
 					{#if resultsStale}
 						<div class="rounded-[1.4rem] border border-amber-500/20 bg-amber-500/10 p-5 text-sm leading-6 text-amber-100">
 							The current inputs are different from the last submitted search. Click
@@ -617,7 +623,8 @@
 							Submit the form to see matching cars from the dataset.
 						</div>
 					{/if}
-				</div>
+					</div>
+				</ScrollArea.Root>
 			</aside>
 		</div>
 
