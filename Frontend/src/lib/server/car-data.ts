@@ -7,9 +7,12 @@ export type CarRecord = {
 	body_type: string;
 	price_usd: number;
 	year_produced: string;
+	odometer_value: number;
 	transmission: string;
 	engine_fuel: string;
 };
+
+type UsageType = 'daily' | 'road-trips' | 'weekend';
 
 let cachedCars: CarRecord[] | null = null;
 
@@ -68,6 +71,7 @@ async function loadCars() {
 		const bodyType = columns[headerIndex.body_type]?.trim();
 		const modelName = columns[headerIndex.model_name]?.trim();
 		const priceValue = Number(columns[headerIndex.price_usd]);
+		const odometerValue = Number(columns[headerIndex.odometer_value]);
 
 		if (!manufacturer || !bodyType || !modelName || Number.isNaN(priceValue)) {
 			return [];
@@ -80,6 +84,7 @@ async function loadCars() {
 				body_type: bodyType,
 				price_usd: priceValue,
 				year_produced: columns[headerIndex.year_produced]?.trim() ?? '',
+				odometer_value: Number.isNaN(odometerValue) ? 0 : odometerValue,
 				transmission: columns[headerIndex.transmission]?.trim() ?? '',
 				engine_fuel: columns[headerIndex.engine_fuel]?.trim() ?? ''
 			}
@@ -110,17 +115,86 @@ export async function getBodyTypesByBrand(brand?: string) {
 export async function getRecommendations(filters: {
 	budgetMin?: number;
 	budgetMax?: number;
+	yearMin?: number;
+	yearMax?: number;
 	brand?: string;
 	bodyType?: string;
+	usageType?: string;
 }) {
 	const cars = await loadCars();
+
+	function getUsageScore(car: CarRecord) {
+		const usageType = filters.usageType as UsageType | undefined;
+		if (!usageType) return 0;
+
+		const bodyType = car.body_type.toLowerCase();
+		const fuel = car.engine_fuel.toLowerCase();
+		const transmission = car.transmission.toLowerCase();
+		const year = Number(car.year_produced);
+		const yearScore = Number.isNaN(year) ? 0 : year;
+		const mileage = car.odometer_value;
+
+		if (usageType === 'daily') {
+			let score = 0;
+			if (['sedan', 'hatchback', 'liftback', 'universal'].includes(bodyType)) score += 40;
+			if (['suv', 'pickup', 'minivan', 'van'].includes(bodyType)) score -= 10;
+			if (fuel === 'diesel' || fuel === 'petrol') score += 8;
+			if (transmission === 'automatic') score += 8;
+			score += Math.max(0, Math.min(25, yearScore - 2000));
+			score += Math.max(0, 30 - mileage / 10000);
+			return score;
+		}
+
+		if (usageType === 'road-trips') {
+			let score = 0;
+			if (['suv', 'universal', 'minivan'].includes(bodyType)) score += 40;
+			if (['sedan', 'liftback'].includes(bodyType)) score += 20;
+			if (['cabriolet', 'coupe'].includes(bodyType)) score -= 8;
+			if (transmission === 'automatic') score += 10;
+			score += Math.max(0, Math.min(25, yearScore - 2005));
+			score += Math.max(0, 25 - mileage / 15000);
+			return score;
+		}
+
+		let score = 0;
+		if (['coupe', 'cabriolet', 'sedan'].includes(bodyType)) score += 35;
+		if (['roadster', 'liftback'].includes(bodyType)) score += 20;
+		if (['minivan', 'van'].includes(bodyType)) score -= 12;
+		score += Math.max(0, Math.min(20, yearScore - 1998));
+		score += Math.max(0, 18 - mileage / 20000);
+		score += Math.min(20, car.price_usd / 2500);
+		return score;
+	}
 
 	const filteredCars = cars
 		.filter((car) => (filters.brand ? car.manufacturer_name.toLowerCase() === filters.brand.toLowerCase() : true))
 		.filter((car) => (filters.bodyType ? car.body_type.toLowerCase() === filters.bodyType.toLowerCase() : true))
 		.filter((car) => (typeof filters.budgetMin === 'number' ? car.price_usd >= filters.budgetMin : true))
 		.filter((car) => (typeof filters.budgetMax === 'number' ? car.price_usd <= filters.budgetMax : true))
-		.sort((left, right) => left.price_usd - right.price_usd)
+		.filter((car) => {
+			if (typeof filters.yearMin !== 'number') return true;
+			const year = Number(car.year_produced);
+			return !Number.isNaN(year) && year >= filters.yearMin;
+		})
+		.filter((car) => {
+			if (typeof filters.yearMax !== 'number') return true;
+			const year = Number(car.year_produced);
+			return !Number.isNaN(year) && year <= filters.yearMax;
+		})
+		.sort((left, right) => {
+			const scoreDifference = getUsageScore(right) - getUsageScore(left);
+			if (scoreDifference !== 0) {
+				return scoreDifference;
+			}
+
+			const leftYear = Number(left.year_produced);
+			const rightYear = Number(right.year_produced);
+			if (!Number.isNaN(leftYear) && !Number.isNaN(rightYear) && rightYear !== leftYear) {
+				return rightYear - leftYear;
+			}
+
+			return left.price_usd - right.price_usd;
+		})
 		.slice(0, 12);
 
 	return filteredCars;

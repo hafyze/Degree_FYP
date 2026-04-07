@@ -1,10 +1,11 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { tick } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import * as Command from '$lib/components/ui/command';
 	import * as Popover from '$lib/components/ui/popover';
+	import * as Chart from '$lib/components/ui/chart';
 	import { Button } from '$lib/components/ui/button';
 	import { cn } from '$lib/utils';
+	import { LineChart } from 'layerchart';
 
 	type UsageType = 'daily' | 'road-trips' | 'weekend';
 
@@ -14,8 +15,14 @@
 		body_type: string;
 		price_usd: number;
 		year_produced: string;
+		odometer_value?: number;
 		transmission: string;
 		engine_fuel: string;
+	};
+
+	type DepreciationPoint = {
+		year: string;
+		value: number;
 	};
 
 	const usageOptions: Array<{
@@ -28,8 +35,17 @@
 		{ value: 'weekend', label: 'Weekend use', description: 'For occasional drives and leisure use.' }
 	];
 
+	const chartConfig = {
+		depreciation: {
+			label: 'Estimated value',
+			color: '#f8fafc'
+		}
+	} satisfies Chart.ChartConfig;
+
 	let budgetMin = $state('');
 	let budgetMax = $state('');
+	let yearMin = $state('');
+	let yearMax = $state('');
 	let preferredBrand = $state('');
 	let bodyType = $state('');
 	let usageType = $state<UsageType>('daily');
@@ -45,6 +61,8 @@
 	let bodyTypeOpen = $state(false);
 	let brandTriggerRef = $state<HTMLButtonElement>(null!);
 	let bodyTypeTriggerRef = $state<HTMLButtonElement>(null!);
+	let lastSubmittedFilters = $state<string | null>(null);
+	let selectedRecommendationKey = $state('');
 
 	const selectedUsage = $derived(
 		usageOptions.find((option) => option.value === usageType) ?? usageOptions[0]
@@ -59,10 +77,78 @@
 		bodyTypeOptions.find((option) => option.value === bodyType)?.label
 	);
 
-	const budgetSummary = $derived.by(() => {
-		if (!budgetMin && !budgetMax) return 'Not set yet';
-		return `${budgetMin || '0'} - ${budgetMax || '0'}`;
+	const currentFilterKey = $derived(
+		JSON.stringify({
+			budgetMin,
+			budgetMax,
+			yearMin,
+			yearMax,
+			preferredBrand,
+			bodyType,
+			usageType
+		})
+	);
+
+	const resultsStale = $derived(lastSubmittedFilters !== null && lastSubmittedFilters !== currentFilterKey);
+
+	$effect(() => {
+		if (resultsStale) {
+			recommendations = [];
+			selectedRecommendationKey = '';
+		}
 	});
+
+	const selectedRecommendation = $derived.by(() => {
+		if (recommendations.length === 0) return null;
+		return (
+			recommendations.find(
+				(car) =>
+					`${car.manufacturer_name}-${car.model_name}-${car.year_produced}-${car.price_usd}` ===
+					selectedRecommendationKey
+			) ?? recommendations[0]
+		);
+	});
+
+	const depreciationData = $derived.by<DepreciationPoint[]>(() => {
+		if (!selectedRecommendation) return [];
+
+		const currentYear = new Date().getFullYear();
+		const vehicleYear = Number(selectedRecommendation.year_produced);
+		const age = Number.isNaN(vehicleYear) ? 8 : Math.max(0, currentYear - vehicleYear);
+		const bodyTypeValue = selectedRecommendation.body_type.toLowerCase();
+		const brand = selectedRecommendation.manufacturer_name.toLowerCase();
+		const startingValue = selectedRecommendation.price_usd;
+
+		let annualRate = age <= 3 ? 0.16 : age <= 7 ? 0.12 : age <= 12 ? 0.09 : 0.07;
+
+		if (['suv', 'universal', 'pickup'].includes(bodyTypeValue)) annualRate -= 0.015;
+		if (['cabriolet', 'coupe'].includes(bodyTypeValue)) annualRate += 0.02;
+		if (['bmw', 'mercedes-benz', 'audi', 'lexus', 'porsche'].includes(brand)) annualRate += 0.015;
+		if (usageType === 'daily') annualRate -= 0.005;
+		if (usageType === 'road-trips') annualRate -= 0.002;
+		if (usageType === 'weekend') annualRate += 0.006;
+
+		annualRate = Math.min(0.22, Math.max(0.05, annualRate));
+
+		return Array.from({ length: 6 }, (_, offset) => ({
+			year: `${currentYear + offset}`,
+			value: Math.max(1000, Math.round(startingValue * (1 - annualRate) ** offset))
+		}));
+	});
+
+	function parseOptionalNumber(value: string | number) {
+		if (typeof value === 'number') {
+			return Number.isNaN(value) ? undefined : value;
+		}
+
+		const normalized = value.trim();
+		if (normalized === '') {
+			return undefined;
+		}
+
+		const parsed = Number(normalized);
+		return Number.isNaN(parsed) ? undefined : parsed;
+	}
 
 	async function loadBrands() {
 		isLoadingBrands = true;
@@ -112,6 +198,24 @@
 		isSubmitting = true;
 		requestError = '';
 
+		const minBudgetValue = parseOptionalNumber(budgetMin);
+		const maxBudgetValue = parseOptionalNumber(budgetMax);
+		const minYearValue = parseOptionalNumber(yearMin);
+		const maxYearValue = parseOptionalNumber(yearMax);
+
+		if (
+			(typeof minBudgetValue === 'number' &&
+				typeof maxBudgetValue === 'number' &&
+				minBudgetValue > maxBudgetValue) ||
+			(typeof minYearValue === 'number' &&
+				typeof maxYearValue === 'number' &&
+				minYearValue > maxYearValue)
+		) {
+			requestError = 'Minimum values cannot be higher than maximum values.';
+			isSubmitting = false;
+			return;
+		}
+
 		try {
 			const response = await fetch('/api/recommend', {
 				method: 'POST',
@@ -121,6 +225,8 @@
 				body: JSON.stringify({
 					budgetMin,
 					budgetMax,
+					yearMin,
+					yearMax,
 					brand: preferredBrand,
 					bodyType,
 					usageType
@@ -133,9 +239,14 @@
 
 			const data = await response.json();
 			recommendations = data.recommendations ?? [];
+			selectedRecommendationKey = data.recommendations?.[0]
+				? `${data.recommendations[0].manufacturer_name}-${data.recommendations[0].model_name}-${data.recommendations[0].year_produced}-${data.recommendations[0].price_usd}`
+				: '';
+			lastSubmittedFilters = currentFilterKey;
 		} catch (error) {
 			requestError = error instanceof Error ? error.message : 'Unable to load recommendations.';
 			recommendations = [];
+			selectedRecommendationKey = '';
 		} finally {
 			isSubmitting = false;
 		}
@@ -167,24 +278,21 @@
 	<title>Preference Input</title>
 	<meta
 		name="description"
-		content="Vehicle preference input page with live preference review and dataset-backed recommendations."
+		content="Vehicle preference input page with recommendations and depreciation chart."
 	/>
 </svelte:head>
 
 <div class="min-h-screen bg-black text-slate-100">
-	<div class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-		<div class="mb-8 space-y-3">
+	<div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+		<div class="mb-6 space-y-2">
 			<p class="text-sm font-semibold tracking-[0.24em] text-slate-400 uppercase">Vehicle preferences</p>
-			<h1 class="text-4xl font-black tracking-[-0.04em] text-white sm:text-5xl">Enter your preferences</h1>
-			<p class="max-w-2xl text-base leading-7 text-slate-400">
-				Brand and body type now come from the backend dataset, and the form submits to a recommendation endpoint.
-			</p>
+			<h1 class="text-3xl font-black tracking-[-0.04em] text-white sm:text-4xl">Enter your preferences</h1>
 		</div>
 
 		<div class="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-			<section class="rounded-[2rem] border border-white/10 bg-neutral-950 p-6 sm:p-8">
+			<section class="rounded-[2rem] border border-white/10 bg-neutral-950 p-5 sm:p-6">
 				<form
-					class="space-y-6"
+					class="space-y-5"
 					onsubmit={(event) => {
 						event.preventDefault();
 						void submitPreferences();
@@ -192,24 +300,50 @@
 				>
 					<div class="grid gap-5 sm:grid-cols-2">
 						<label class="space-y-2">
-							<span class="text-sm font-semibold text-slate-200">Minimum budget</span>
+							<span class="text-sm font-semibold text-slate-200">Minimum budget (USD)</span>
 							<input
 								bind:value={budgetMin}
 								type="number"
 								min="0"
 								placeholder="e.g. 5000"
-								class="w-full rounded-[1.2rem] border border-white/10 bg-black px-4 py-3 text-white placeholder:text-slate-600 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-700"
+								class="w-full rounded-[1.2rem] border border-white/10 bg-black px-4 py-2.5 text-white placeholder:text-slate-600 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-700"
 							/>
 						</label>
 
 						<label class="space-y-2">
-							<span class="text-sm font-semibold text-slate-200">Maximum budget</span>
+							<span class="text-sm font-semibold text-slate-200">Maximum budget (USD)</span>
 							<input
 								bind:value={budgetMax}
 								type="number"
 								min="0"
 								placeholder="e.g. 12000"
-								class="w-full rounded-[1.2rem] border border-white/10 bg-black px-4 py-3 text-white placeholder:text-slate-600 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-700"
+								class="w-full rounded-[1.2rem] border border-white/10 bg-black px-4 py-2.5 text-white placeholder:text-slate-600 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-700"
+							/>
+						</label>
+					</div>
+
+					<div class="grid gap-5 sm:grid-cols-2">
+						<label class="space-y-2">
+							<span class="text-sm font-semibold text-slate-200">Minimum year</span>
+							<input
+								bind:value={yearMin}
+								type="number"
+								min="1900"
+								max="2100"
+								placeholder="e.g. 2015"
+								class="w-full rounded-[1.2rem] border border-white/10 bg-black px-4 py-2.5 text-white placeholder:text-slate-600 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-700"
+							/>
+						</label>
+
+						<label class="space-y-2">
+							<span class="text-sm font-semibold text-slate-200">Maximum year</span>
+							<input
+								bind:value={yearMax}
+								type="number"
+								min="1900"
+								max="2100"
+								placeholder="e.g. 2022"
+								class="w-full rounded-[1.2rem] border border-white/10 bg-black px-4 py-2.5 text-white placeholder:text-slate-600 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-700"
 							/>
 						</label>
 					</div>
@@ -223,7 +357,7 @@
 										<Button
 											{...props}
 											variant="outline"
-											class="h-12 w-full justify-between rounded-[1.2rem] border-white/10 bg-black px-4 text-white hover:bg-neutral-900"
+											class="h-11 w-full justify-between rounded-[1.2rem] !border-white/10 !bg-black px-4 !text-white hover:!bg-neutral-900 focus-visible:!ring-0 focus-visible:!outline-none"
 											role="combobox"
 											aria-expanded={brandOpen}
 											disabled={isLoadingBrands}
@@ -233,14 +367,15 @@
 										</Button>
 									{/snippet}
 								</Popover.Trigger>
-								<Popover.Content class="w-[var(--bits-popover-anchor-width)] border-white/10 bg-neutral-950 p-0 text-white">
+								<Popover.Content class="combobox-popover w-[var(--bits-popover-anchor-width)] !border-white/10 !bg-neutral-950 p-0 !text-white !ring-0">
 									<Command.Root>
-										<Command.Input placeholder="Search brand..." class="border-white/10 bg-neutral-950 text-white placeholder:text-slate-500" />
+										<Command.Input placeholder="Search brand..." class="!bg-transparent !text-white placeholder:!text-slate-500 focus-visible:!ring-0 focus-visible:!outline-none" />
 										<Command.List class="bg-neutral-950">
 											<Command.Empty>No brand found.</Command.Empty>
 											<Command.Group value="brands">
 												<Command.Item
 													value=""
+													class="text-slate-200 data-selected:!bg-neutral-900 data-selected:!text-white"
 													onSelect={() => {
 														void selectBrand('');
 													}}
@@ -253,6 +388,7 @@
 												{#each brandOptions as brand (brand.value)}
 													<Command.Item
 														value={brand.value}
+														class="text-slate-200 data-selected:!bg-neutral-900 data-selected:!text-white"
 														onSelect={() => {
 															void selectBrand(brand.value);
 														}}
@@ -281,7 +417,7 @@
 										<Button
 											{...props}
 											variant="outline"
-											class="h-12 w-full justify-between rounded-[1.2rem] border-white/10 bg-black px-4 text-white hover:bg-neutral-900"
+											class="h-11 w-full justify-between rounded-[1.2rem] !border-white/10 !bg-black px-4 !text-white hover:!bg-neutral-900 focus-visible:!ring-0 focus-visible:!outline-none"
 											role="combobox"
 											aria-expanded={bodyTypeOpen}
 											disabled={isLoadingBodyTypes}
@@ -291,14 +427,15 @@
 										</Button>
 									{/snippet}
 								</Popover.Trigger>
-								<Popover.Content class="w-[var(--bits-popover-anchor-width)] border-white/10 bg-neutral-950 p-0 text-white">
+								<Popover.Content class="combobox-popover w-[var(--bits-popover-anchor-width)] !border-white/10 !bg-neutral-950 p-0 !text-white !ring-0">
 									<Command.Root>
-										<Command.Input placeholder="Search body type..." class="border-white/10 bg-neutral-950 text-white placeholder:text-slate-500" />
+										<Command.Input placeholder="Search body type..." class="!bg-transparent !text-white placeholder:!text-slate-500 focus-visible:!ring-0 focus-visible:!outline-none" />
 										<Command.List class="bg-neutral-950">
 											<Command.Empty>No body type found.</Command.Empty>
 											<Command.Group value="body-types">
 												<Command.Item
 													value=""
+													class="text-slate-200 data-selected:!bg-neutral-900 data-selected:!text-white"
 													onSelect={() => {
 														void selectBodyType('');
 													}}
@@ -311,6 +448,7 @@
 												{#each bodyTypeOptions as option (option.value)}
 													<Command.Item
 														value={option.value}
+														class="text-slate-200 data-selected:!bg-neutral-900 data-selected:!text-white"
 														onSelect={() => {
 															void selectBodyType(option.value);
 														}}
@@ -332,25 +470,25 @@
 						</div>
 					</div>
 
-					<div class="space-y-3">
+					<div class="space-y-2.5">
 						<div>
 							<p class="text-sm font-semibold text-slate-200">Usage type</p>
-							<p class="mt-1 text-sm text-slate-500">Using “Road trips” as the better term for long journey.</p>
+							<p class="mt-1 text-sm text-slate-500">Using "Road trips" as the better term for long journey.</p>
 						</div>
 
 						<div class="grid gap-3">
 							{#each usageOptions as option}
 								<button
 									type="button"
-									class={`w-full rounded-[1.4rem] border px-4 py-4 text-left transition ${
+									class={`w-full rounded-[1.3rem] border px-4 py-3 text-left transition ${
 										usageType === option.value
 											? 'border-white/30 bg-white/5'
 											: 'border-white/10 bg-black hover:border-white/20'
 									}`}
 									onclick={() => (usageType = option.value)}
 								>
-									<p class="text-base font-bold text-white">{option.label}</p>
-									<p class="mt-1 text-sm leading-6 text-slate-500">{option.description}</p>
+									<p class="text-[15px] font-bold text-white">{option.label}</p>
+									<p class="mt-1 text-sm leading-5 text-slate-500">{option.description}</p>
 								</button>
 							{/each}
 						</div>
@@ -362,12 +500,12 @@
 						</p>
 					{/if}
 
-					<div class="flex items-center justify-between border-t border-white/10 pt-6">
+					<div class="flex items-center justify-between border-t border-white/10 pt-5">
 						<p class="text-sm text-slate-500">Dataset-backed filters and recommendation request.</p>
 						<Button
 							type="submit"
 							size="lg"
-							class="h-11 rounded-full bg-white px-6 text-sm font-semibold text-black hover:bg-slate-200"
+							class="h-10 rounded-full bg-white px-5 text-sm font-semibold text-black hover:bg-slate-200"
 							disabled={isSubmitting}
 						>
 							{isSubmitting ? 'Loading...' : 'Get recommendations'}
@@ -376,70 +514,200 @@
 				</form>
 			</section>
 
-			<aside class="space-y-6">
-				<section class="rounded-[2rem] border border-white/10 bg-neutral-950 p-6 sm:p-8">
-					<div class="space-y-6">
-						<div>
-							<p class="text-sm font-semibold tracking-[0.18em] text-slate-400 uppercase">Live review</p>
-							<h2 class="mt-3 text-3xl font-black tracking-[-0.04em] text-white">Current preferences</h2>
-						</div>
-
-						<div class="grid gap-4">
-							<div class="rounded-[1.5rem] border border-white/10 bg-black p-5">
-								<p class="text-sm font-semibold text-slate-500">Budget range</p>
-								<p class="mt-2 text-2xl font-bold tracking-[-0.03em] text-white">{budgetSummary}</p>
-							</div>
-
-							<div class="rounded-[1.5rem] border border-white/10 bg-black p-5">
-								<p class="text-sm font-semibold text-slate-500">Preferred brand</p>
-								<p class="mt-2 text-lg font-semibold text-white">{preferredBrand || 'Any brand'}</p>
-							</div>
-
-							<div class="rounded-[1.5rem] border border-white/10 bg-black p-5">
-								<p class="text-sm font-semibold text-slate-500">Body type</p>
-								<p class="mt-2 text-lg font-semibold text-white">{bodyType || 'Any body type'}</p>
-							</div>
-
-							<div class="rounded-[1.5rem] border border-white/10 bg-black p-5">
-								<p class="text-sm font-semibold text-slate-500">Usage</p>
-								<p class="mt-2 text-lg font-semibold text-white">{selectedUsage.label}</p>
-								<p class="mt-1 text-sm leading-6 text-slate-500">{selectedUsage.description}</p>
-							</div>
-						</div>
+			<aside class="rounded-[2rem] border border-white/10 bg-neutral-950 p-5 sm:p-6">
+				<div class="flex items-center justify-between gap-4">
+					<div>
+						<p class="text-sm font-semibold tracking-[0.18em] text-slate-400 uppercase">Recommendations</p>
+						<h2 class="mt-2 text-2xl font-black tracking-[-0.04em] text-white">Results</h2>
 					</div>
-				</section>
-
-				<section class="rounded-[2rem] border border-white/10 bg-neutral-950 p-6 sm:p-8">
-					<div class="flex items-center justify-between gap-4">
-						<div>
-							<p class="text-sm font-semibold tracking-[0.18em] text-slate-400 uppercase">Recommendations</p>
-							<h2 class="mt-3 text-3xl font-black tracking-[-0.04em] text-white">Results</h2>
-						</div>
-						<div class="rounded-full border border-white/10 bg-black px-4 py-2 text-sm text-slate-300">
-							{recommendations.length} found
-						</div>
+					<div class="rounded-full border border-white/10 bg-black px-4 py-2 text-sm text-slate-300">
+						{resultsStale ? 'Filters changed' : `${recommendations.length} found`}
 					</div>
+				</div>
 
-					<div class="mt-6 space-y-3">
-						{#if recommendations.length > 0}
-							{#each recommendations as car}
-								<div class="rounded-[1.4rem] border border-white/10 bg-black p-4">
-									<p class="text-lg font-bold text-white">{car.manufacturer_name} {car.model_name}</p>
-									<p class="mt-1 text-sm text-slate-400">
-										{car.body_type} · {car.year_produced || 'Year unknown'} · {car.transmission || 'Transmission unknown'}
-									</p>
-									<p class="mt-3 text-sm text-slate-500">{car.engine_fuel || 'Fuel unknown'}</p>
-									<p class="mt-2 text-base font-semibold text-white">${car.price_usd.toLocaleString()}</p>
-								</div>
-							{/each}
-						{:else}
-							<div class="rounded-[1.4rem] border border-dashed border-white/10 bg-black p-5 text-sm leading-6 text-slate-500">
-								Submit the form to see matching cars from the dataset.
-							</div>
-						{/if}
-					</div>
-				</section>
+				<div class="mt-4 space-y-3 lg:max-h-[31rem] lg:overflow-y-auto lg:pr-1">
+					{#if resultsStale}
+						<div class="rounded-[1.4rem] border border-amber-500/20 bg-amber-500/10 p-5 text-sm leading-6 text-amber-100">
+							The current inputs are different from the last submitted search. Click
+							"Get recommendations" again to refresh the results for this budget range.
+						</div>
+					{:else if recommendations.length > 0}
+						{#each recommendations as car}
+							<button
+								type="button"
+								class={`w-full rounded-[1.3rem] border bg-black p-3.5 text-left transition ${
+									selectedRecommendation &&
+									`${car.manufacturer_name}-${car.model_name}-${car.year_produced}-${car.price_usd}` ===
+										`${selectedRecommendation.manufacturer_name}-${selectedRecommendation.model_name}-${selectedRecommendation.year_produced}-${selectedRecommendation.price_usd}`
+										? 'border-white/30 bg-white/5'
+										: 'border-white/10 hover:border-white/20'
+								}`}
+								onclick={() =>
+									(selectedRecommendationKey = `${car.manufacturer_name}-${car.model_name}-${car.year_produced}-${car.price_usd}`)}
+							>
+								<p class="text-base font-bold text-white">{car.manufacturer_name} {car.model_name}</p>
+								<p class="mt-1 text-sm leading-5 text-slate-400">
+									{car.body_type} · {car.year_produced || 'Year unknown'} · {car.transmission || 'Transmission unknown'}
+								</p>
+								<p class="mt-3 text-sm text-slate-500">{car.engine_fuel || 'Fuel unknown'}</p>
+								<p class="mt-2 text-[15px] font-semibold text-white">${car.price_usd.toLocaleString()}</p>
+							</button>
+						{/each}
+					{:else}
+						<div class="rounded-[1.4rem] border border-dashed border-white/10 bg-black p-5 text-sm leading-6 text-slate-500">
+							Submit the form to see matching cars from the dataset.
+						</div>
+					{/if}
+				</div>
 			</aside>
 		</div>
+
+		<section class="mt-6 rounded-[2rem] border border-white/10 bg-neutral-950 p-5 sm:p-6">
+			<div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+				<div>
+					<p class="text-sm font-semibold tracking-[0.18em] text-slate-400 uppercase">Depreciation</p>
+					<h2 class="mt-2 text-2xl font-black tracking-[-0.04em] text-white">Projected value trend</h2>
+				</div>
+				{#if selectedRecommendation}
+					<div class="text-sm text-slate-400">
+						<span class="font-semibold text-white">
+							{selectedRecommendation.manufacturer_name} {selectedRecommendation.model_name}
+						</span>
+						<span> · {selectedRecommendation.year_produced || 'Year unknown'} · ${selectedRecommendation.price_usd.toLocaleString()}</span>
+					</div>
+				{/if}
+			</div>
+
+			<div class="mt-4">
+				{#if selectedRecommendation && depreciationData.length > 0}
+					<div class="mb-4 flex flex-wrap gap-3 text-sm text-slate-400">
+						<div class="rounded-full border border-white/10 bg-black px-4 py-2">
+							Usage: <span class="font-semibold text-white">{selectedUsage.label}</span>
+						</div>
+						<div class="rounded-full border border-white/10 bg-black px-4 py-2">
+							Estimated 5-year drop:
+							<span class="font-semibold text-white">
+								{Math.round(
+									((selectedRecommendation.price_usd - depreciationData[depreciationData.length - 1].value) /
+										selectedRecommendation.price_usd) *
+										100
+								)}%
+							</span>
+						</div>
+					</div>
+
+					<Chart.ChartContainer config={chartConfig} class="h-[250px] w-full">
+						<LineChart
+							data={depreciationData}
+							x="year"
+							y="value"
+							series={[
+								{
+									key: 'depreciation',
+									label: 'Estimated value',
+									value: 'value',
+									color: 'var(--color-depreciation)'
+								}
+							]}
+							props={{
+								xAxis: {
+									format: (value: unknown) => `${value ?? ''}`
+								},
+								yAxis: {
+									format: (value: unknown) =>
+										typeof value === 'number' ? `$${value.toLocaleString()}` : `${value ?? ''}`
+								},
+								tooltip: {
+									root: {
+										class: 'depreciation-tooltip-root'
+									}
+								}
+							}}
+						/>
+					</Chart.ChartContainer>
+				{:else}
+					<div class="rounded-[1.4rem] border border-dashed border-white/10 bg-black p-5 text-sm leading-6 text-slate-500">
+						Choose a recommended car to see its projected depreciation trend.
+					</div>
+				{/if}
+			</div>
+		</section>
 	</div>
 </div>
+
+<style>
+	:global(.combobox-popover) {
+		box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
+	}
+
+	:global(.combobox-popover [data-slot='command-input-wrapper']) {
+		padding: 0.75rem 0.75rem 0 0.75rem;
+	}
+
+	:global(.combobox-popover [data-slot='input-group']) {
+		background: rgb(10 10 10);
+		border-color: rgba(255, 255, 255, 0.08);
+		box-shadow: none;
+	}
+
+	:global(.combobox-popover [data-slot='input-group']:focus-within) {
+		border-color: rgba(255, 255, 255, 0.16);
+		box-shadow: none;
+	}
+
+	:global(.combobox-popover [data-slot='input-group-addon']) {
+		color: rgb(113 113 122);
+	}
+
+	:global(.combobox-popover [data-slot='command-input']) {
+		background: transparent;
+		color: white;
+		box-shadow: none;
+		outline: none;
+	}
+
+	:global(.combobox-popover [data-slot='command-input']::placeholder) {
+		color: rgb(113 113 122);
+	}
+
+	:global(.combobox-popover [data-slot='command-list']) {
+		padding: 0.5rem 0.75rem 0.75rem 0.75rem;
+	}
+
+	:global(.combobox-popover [data-slot='command-item']) {
+		border-radius: 1rem;
+		color: rgb(226 232 240);
+	}
+
+	:global(.combobox-popover [data-slot='command-item'][data-selected]) {
+		background: rgb(23 23 23);
+		color: white;
+	}
+
+	:global(.depreciation-tooltip-root) {
+		z-index: 20;
+		background: rgba(10, 10, 10, 0.96);
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		border-radius: 1rem;
+		box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+		color: white;
+	}
+
+	:global(.depreciation-tooltip-root .lc-tooltip-header) {
+		color: white;
+		font-weight: 700;
+	}
+
+	:global(.depreciation-tooltip-root .lc-tooltip-item-label) {
+		color: rgb(148 163 184);
+	}
+
+	:global(.depreciation-tooltip-root .lc-tooltip-item-value) {
+		color: white;
+		font-weight: 600;
+	}
+
+	:global(.depreciation-tooltip-root .lc-tooltip-item-color) {
+		border-color: rgba(255, 255, 255, 0.8);
+	}
+</style>
