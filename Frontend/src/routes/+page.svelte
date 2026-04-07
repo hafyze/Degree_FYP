@@ -22,7 +22,10 @@
 
 	type DepreciationPoint = {
 		year: string;
-		value: number;
+		predicted_price_usd: number;
+		car_age?: number;
+		odometer_value?: number;
+		usage_type?: UsageType;
 	};
 
 	const usageOptions: Array<{
@@ -37,7 +40,7 @@
 
 	const chartConfig = {
 		depreciation: {
-			label: 'Estimated value',
+			label: 'Predicted value',
 			color: '#f8fafc'
 		}
 	} satisfies Chart.ChartConfig;
@@ -53,10 +56,13 @@
 	let brands = $state<string[]>([]);
 	let bodyTypes = $state<string[]>([]);
 	let recommendations = $state<Recommendation[]>([]);
+	let depreciationData = $state<DepreciationPoint[]>([]);
 	let isLoadingBrands = $state(true);
 	let isLoadingBodyTypes = $state(false);
 	let isSubmitting = $state(false);
+	let isLoadingDepreciation = $state(false);
 	let requestError = $state('');
+	let depreciationError = $state('');
 	let brandOpen = $state(false);
 	let bodyTypeOpen = $state(false);
 	let brandTriggerRef = $state<HTMLButtonElement>(null!);
@@ -95,11 +101,14 @@
 		if (resultsStale) {
 			recommendations = [];
 			selectedRecommendationKey = '';
+			depreciationData = [];
+			depreciationError = '';
 		}
 	});
 
 	const selectedRecommendation = $derived.by(() => {
 		if (recommendations.length === 0) return null;
+
 		return (
 			recommendations.find(
 				(car) =>
@@ -107,33 +116,6 @@
 					selectedRecommendationKey
 			) ?? recommendations[0]
 		);
-	});
-
-	const depreciationData = $derived.by<DepreciationPoint[]>(() => {
-		if (!selectedRecommendation) return [];
-
-		const currentYear = new Date().getFullYear();
-		const vehicleYear = Number(selectedRecommendation.year_produced);
-		const age = Number.isNaN(vehicleYear) ? 8 : Math.max(0, currentYear - vehicleYear);
-		const bodyTypeValue = selectedRecommendation.body_type.toLowerCase();
-		const brand = selectedRecommendation.manufacturer_name.toLowerCase();
-		const startingValue = selectedRecommendation.price_usd;
-
-		let annualRate = age <= 3 ? 0.16 : age <= 7 ? 0.12 : age <= 12 ? 0.09 : 0.07;
-
-		if (['suv', 'universal', 'pickup'].includes(bodyTypeValue)) annualRate -= 0.015;
-		if (['cabriolet', 'coupe'].includes(bodyTypeValue)) annualRate += 0.02;
-		if (['bmw', 'mercedes-benz', 'audi', 'lexus', 'porsche'].includes(brand)) annualRate += 0.015;
-		if (usageType === 'daily') annualRate -= 0.005;
-		if (usageType === 'road-trips') annualRate -= 0.002;
-		if (usageType === 'weekend') annualRate += 0.006;
-
-		annualRate = Math.min(0.22, Math.max(0.05, annualRate));
-
-		return Array.from({ length: 6 }, (_, offset) => ({
-			year: `${currentYear + offset}`,
-			value: Math.max(1000, Math.round(startingValue * (1 - annualRate) ** offset))
-		}));
 	});
 
 	function parseOptionalNumber(value: string | number) {
@@ -268,9 +250,81 @@
 		bodyTypeTriggerRef?.focus();
 	}
 
+	async function loadDepreciationForecast(car: Recommendation) {
+		isLoadingDepreciation = true;
+		depreciationError = '';
+
+		try {
+			const response = await fetch('/api/depreciation', {
+				method: 'POST',
+				headers: {
+					'content-type': 'application/json'
+				},
+				body: JSON.stringify({
+					manufacturer_name: car.manufacturer_name,
+					model_name: car.model_name,
+					body_type: car.body_type,
+					year_produced: Number(car.year_produced),
+					price_usd: car.price_usd,
+					usage_type: usageType,
+					horizon_years: 5
+				})
+			});
+
+			const data = await response.json();
+
+			if (!response.ok) {
+				throw new Error(
+					typeof data?.message === 'string'
+						? data.message
+						: 'Unable to load depreciation prediction.'
+				);
+			}
+
+			depreciationData = Array.isArray(data?.points)
+				? data.points.map((point: Record<string, unknown>) => ({
+						year: `${point.year ?? ''}`,
+						predicted_price_usd:
+							typeof point.predicted_price_usd === 'number'
+								? point.predicted_price_usd
+								: Number(point.predicted_price_usd ?? 0),
+						car_age:
+							typeof point.car_age === 'number' ? point.car_age : Number(point.car_age ?? 0),
+						odometer_value:
+							typeof point.odometer_value === 'number'
+								? point.odometer_value
+								: Number(point.odometer_value ?? 0),
+						usage_type:
+							point.usage_type === 'daily' ||
+							point.usage_type === 'road-trips' ||
+							point.usage_type === 'weekend'
+								? point.usage_type
+								: usageType
+					}))
+				: [];
+		} catch (error) {
+			depreciationData = [];
+			depreciationError =
+				error instanceof Error ? error.message : 'Unable to load depreciation prediction.';
+		} finally {
+			isLoadingDepreciation = false;
+		}
+	}
+
 	onMount(async () => {
 		await loadBrands();
 		await loadBodyTypes('');
+	});
+
+	$effect(() => {
+		if (!selectedRecommendation || resultsStale) {
+			depreciationData = [];
+			depreciationError = '';
+			isLoadingDepreciation = false;
+			return;
+		}
+
+		void loadDepreciationForecast(selectedRecommendation);
 	});
 </script>
 
@@ -369,7 +423,10 @@
 								</Popover.Trigger>
 								<Popover.Content class="combobox-popover w-[var(--bits-popover-anchor-width)] !border-white/10 !bg-neutral-950 p-0 !text-white !ring-0">
 									<Command.Root>
-										<Command.Input placeholder="Search brand..." class="!bg-transparent !text-white placeholder:!text-slate-500 focus-visible:!ring-0 focus-visible:!outline-none" />
+										<Command.Input
+											placeholder="Search brand..."
+											class="!bg-transparent !text-white placeholder:!text-slate-500 focus-visible:!ring-0 focus-visible:!outline-none"
+										/>
 										<Command.List class="bg-neutral-950">
 											<Command.Empty>No brand found.</Command.Empty>
 											<Command.Group value="brands">
@@ -429,7 +486,10 @@
 								</Popover.Trigger>
 								<Popover.Content class="combobox-popover w-[var(--bits-popover-anchor-width)] !border-white/10 !bg-neutral-950 p-0 !text-white !ring-0">
 									<Command.Root>
-										<Command.Input placeholder="Search body type..." class="!bg-transparent !text-white placeholder:!text-slate-500 focus-visible:!ring-0 focus-visible:!outline-none" />
+										<Command.Input
+											placeholder="Search body type..."
+											class="!bg-transparent !text-white placeholder:!text-slate-500 focus-visible:!ring-0 focus-visible:!outline-none"
+										/>
 										<Command.List class="bg-neutral-950">
 											<Command.Empty>No body type found.</Command.Empty>
 											<Command.Group value="body-types">
@@ -473,7 +533,6 @@
 					<div class="space-y-2.5">
 						<div>
 							<p class="text-sm font-semibold text-slate-200">Usage type</p>
-							<p class="mt-1 text-sm text-slate-500">Using "Road trips" as the better term for long journey.</p>
 						</div>
 
 						<div class="grid gap-3">
@@ -579,7 +638,15 @@
 			</div>
 
 			<div class="mt-4">
-				{#if selectedRecommendation && depreciationData.length > 0}
+				{#if selectedRecommendation && isLoadingDepreciation}
+					<div class="rounded-[1.4rem] border border-white/10 bg-black p-5 text-sm leading-6 text-slate-400">
+						Loading model-based depreciation forecast...
+					</div>
+				{:else if selectedRecommendation && depreciationError}
+					<div class="rounded-[1.4rem] border border-red-500/20 bg-red-500/10 p-5 text-sm leading-6 text-red-200">
+						{depreciationError}
+					</div>
+				{:else if selectedRecommendation && depreciationData.length > 0}
 					<div class="mb-4 flex flex-wrap gap-3 text-sm text-slate-400">
 						<div class="rounded-full border border-white/10 bg-black px-4 py-2">
 							Usage: <span class="font-semibold text-white">{selectedUsage.label}</span>
@@ -588,7 +655,7 @@
 							Estimated 5-year drop:
 							<span class="font-semibold text-white">
 								{Math.round(
-									((selectedRecommendation.price_usd - depreciationData[depreciationData.length - 1].value) /
+									((selectedRecommendation.price_usd - depreciationData[depreciationData.length - 1].predicted_price_usd) /
 										selectedRecommendation.price_usd) *
 										100
 								)}%
@@ -600,12 +667,12 @@
 						<LineChart
 							data={depreciationData}
 							x="year"
-							y="value"
+							y="predicted_price_usd"
 							series={[
 								{
 									key: 'depreciation',
-									label: 'Estimated value',
-									value: 'value',
+									label: 'Predicted value',
+									value: 'predicted_price_usd',
 									color: 'var(--color-depreciation)'
 								}
 							]}
