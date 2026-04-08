@@ -620,7 +620,7 @@
 						{/each}
 					{:else}
 						<div class="rounded-[1.4rem] border border-dashed border-white/10 bg-black p-5 text-sm leading-6 text-slate-500">
-							Submit the form to see matching cars from the dataset.
+							Submit the form to see matching cars.
 						</div>
 					{/if}
 					</div>
