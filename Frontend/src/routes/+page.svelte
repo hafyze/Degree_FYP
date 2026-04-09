@@ -207,6 +207,29 @@
 		return bodyTypeIconMap[bodyTypeValue.toLowerCase()];
 	}
 
+	function getFuelBadgeClasses(fuelValue: string) {
+		const normalized = fuelValue.toLowerCase();
+
+		if (normalized === 'petrol') {
+			return {
+				dot: 'bg-emerald-400',
+				text: 'text-emerald-200'
+			};
+		}
+
+		if (normalized === 'diesel') {
+			return {
+				dot: 'bg-slate-400',
+				text: 'text-slate-300'
+			};
+		}
+
+		return {
+			dot: 'bg-slate-600',
+			text: 'text-slate-500'
+		};
+	}
+
 	async function loadBrands() {
 		isLoadingBrands = true;
 		requestError = '';
@@ -441,8 +464,8 @@
 <div class="min-h-screen bg-black text-slate-100">
 	<div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
 		<div class="mb-6 space-y-2">
-			<p class="text-sm font-semibold tracking-[0.24em] text-slate-400 uppercase">Vehicle preferences</p>
-			<h1 class="text-3xl font-black tracking-[-0.04em] text-white sm:text-4xl">Enter your preferences</h1>
+			<p class="text-sm font-semibold tracking-[0.24em] text-slate-400 uppercase">Fyze's Smart Car Recommendation System</p>
+			<h1 class="text-3xl font-black tracking-[-0.04em] text-white sm:text-4xl">Vehicle Preference Recommendation</h1>
 		</div>
 
 		<div class="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
@@ -576,7 +599,7 @@
 										>
 											<span class="flex items-center gap-3 overflow-hidden">
 												{#if selectedBodyTypeOption?.icon}
-													<img src={selectedBodyTypeOption.icon} alt={selectedBodyTypeOption.label} class="h-5 w-5 object-contain opacity-80" />
+													<img src={selectedBodyTypeOption.icon} alt={selectedBodyTypeOption.label} class="h-7 w-7 object-contain opacity-90" />
 												{/if}
 												<span class="truncate">{selectedBodyTypeLabel || 'Any body type'}</span>
 											</span>
@@ -599,7 +622,7 @@
 													<Command.Item value={option.value} class="text-slate-200 data-selected:!bg-neutral-900 data-selected:!text-white" onSelect={() => void selectBodyType(option.value)}>
 														<span class={cn('mr-2 text-xs', bodyType !== option.value && 'text-transparent')}>✓</span>
 														{#if option.icon}
-															<img src={option.icon} alt={option.label} class="mr-3 h-5 w-5 object-contain opacity-80" />
+															<img src={option.icon} alt={option.label} class="mr-3 h-7 w-7 object-contain opacity-90" />
 														{/if}
 														{option.label}
 													</Command.Item>
@@ -740,7 +763,12 @@
 											<p class="mt-2 text-sm text-slate-500">
 												{drivetrainLabels[car.drivetrain ?? ''] ?? car.drivetrain ?? 'Drivetrain unknown'}
 											</p>
-											<p class="mt-1 text-sm text-slate-500">{car.engine_fuel || 'Fuel unknown'}</p>
+											<div class="mt-1 flex items-center gap-2 text-sm">
+												<span class={`h-2.5 w-2.5 rounded-full ${getFuelBadgeClasses(car.engine_fuel || '').dot}`}></span>
+												<span class={getFuelBadgeClasses(car.engine_fuel || '').text}>
+													{car.engine_fuel || 'Fuel unknown'}
+												</span>
+											</div>
 											<p class="mt-2 text-[15px] font-semibold text-white">${car.price_usd.toLocaleString()}</p>
 										</div>
 									</div>
