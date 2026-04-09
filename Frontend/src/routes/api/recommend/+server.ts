@@ -18,8 +18,8 @@ export async function POST({ request }) {
 	const payload = await request.json();
 	const budgetMin = toNumber(payload.budgetMin);
 	const budgetMax = toNumber(payload.budgetMax);
-	const yearMin = toNumber(payload.yearMin);
-	const yearMax = toNumber(payload.yearMax);
+	const ageMin = toNumber(payload.ageMin);
+	const ageMax = toNumber(payload.ageMax);
 	const brand = typeof payload.brand === 'string' ? payload.brand.trim() : '';
 	const bodyType = typeof payload.bodyType === 'string' ? payload.bodyType.trim() : '';
 	const usageType = typeof payload.usageType === 'string' ? payload.usageType.trim() : '';
@@ -27,8 +27,8 @@ export async function POST({ request }) {
 	const recommendations = await getRecommendations({
 		budgetMin,
 		budgetMax,
-		yearMin,
-		yearMax,
+		ageMin,
+		ageMax,
 		brand: brand || undefined,
 		bodyType: bodyType || undefined,
 		usageType: usageType || undefined
@@ -39,8 +39,8 @@ export async function POST({ request }) {
 		appliedFilters: {
 			budgetMin,
 			budgetMax,
-			yearMin,
-			yearMax,
+			ageMin,
+			ageMax,
 			brand: brand || undefined,
 			bodyType: bodyType || undefined,
 			usageType: usageType || undefined

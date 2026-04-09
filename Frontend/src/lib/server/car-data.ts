@@ -112,16 +112,35 @@ export async function getBodyTypesByBrand(brand?: string) {
 	return sortText(new Set(filteredCars.map((car) => car.body_type)));
 }
 
+export async function getPriceBounds() {
+	const cars = await loadCars();
+
+	if (cars.length === 0) {
+		return {
+			min: 0,
+			max: 50000
+		};
+	}
+
+	const prices = cars.map((car) => car.price_usd);
+
+	return {
+		min: Math.min(...prices),
+		max: Math.max(...prices)
+	};
+}
+
 export async function getRecommendations(filters: {
 	budgetMin?: number;
 	budgetMax?: number;
-	yearMin?: number;
-	yearMax?: number;
+	ageMin?: number;
+	ageMax?: number;
 	brand?: string;
 	bodyType?: string;
 	usageType?: string;
 }) {
 	const cars = await loadCars();
+	const currentYear = new Date().getFullYear();
 
 	function getUsageScore(car: CarRecord) {
 		const usageType = filters.usageType as UsageType | undefined;
@@ -172,14 +191,16 @@ export async function getRecommendations(filters: {
 		.filter((car) => (typeof filters.budgetMin === 'number' ? car.price_usd >= filters.budgetMin : true))
 		.filter((car) => (typeof filters.budgetMax === 'number' ? car.price_usd <= filters.budgetMax : true))
 		.filter((car) => {
-			if (typeof filters.yearMin !== 'number') return true;
+			if (typeof filters.ageMin !== 'number') return true;
 			const year = Number(car.year_produced);
-			return !Number.isNaN(year) && year >= filters.yearMin;
+			const age = Number.isNaN(year) ? Number.NaN : Math.max(0, currentYear - year);
+			return !Number.isNaN(age) && age >= filters.ageMin;
 		})
 		.filter((car) => {
-			if (typeof filters.yearMax !== 'number') return true;
+			if (typeof filters.ageMax !== 'number') return true;
 			const year = Number(car.year_produced);
-			return !Number.isNaN(year) && year <= filters.yearMax;
+			const age = Number.isNaN(year) ? Number.NaN : Math.max(0, currentYear - year);
+			return !Number.isNaN(age) && age <= filters.ageMax;
 		})
 		.sort((left, right) => {
 			const scoreDifference = getUsageScore(right) - getUsageScore(left);

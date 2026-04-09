@@ -2,6 +2,7 @@
 	import { onMount, tick } from 'svelte';
 	import * as Command from '$lib/components/ui/command';
 	import * as Popover from '$lib/components/ui/popover';
+	import * as Slider from '$lib/components/ui/slider';
 	import * as ScrollArea from '$lib/components/ui/scroll-area';
 	import * as Chart from '$lib/components/ui/chart';
 	import { Button } from '$lib/components/ui/button';
@@ -46,10 +47,10 @@
 		}
 	} satisfies Chart.ChartConfig;
 
-	let budgetMin = $state('');
-	let budgetMax = $state('');
-	let yearMin = $state('');
-	let yearMax = $state('');
+	let budgetRange = $state<[number, number]>([0, 50000]);
+	let priceRangeMax = $state(50000);
+	let ageMin = $state('');
+	let ageMax = $state('');
 	let preferredBrand = $state('');
 	let bodyType = $state('');
 	let usageType = $state<UsageType>('daily');
@@ -60,6 +61,7 @@
 	let depreciationData = $state<DepreciationPoint[]>([]);
 	let isLoadingBrands = $state(true);
 	let isLoadingBodyTypes = $state(false);
+	let isLoadingBudgetRange = $state(true);
 	let isSubmitting = $state(false);
 	let isLoadingDepreciation = $state(false);
 	let requestError = $state('');
@@ -84,12 +86,22 @@
 		bodyTypeOptions.find((option) => option.value === bodyType)?.label
 	);
 
+	const budgetTicks = $derived(
+		Array.from({ length: 6 }, (_, index) => {
+			const rawValue = (priceRangeMax / 5) * index;
+			const roundedValue = index === 5 ? priceRangeMax : Math.round(rawValue / 1000) * 1000;
+			return {
+				value: roundedValue,
+				label: roundedValue >= 1000 ? `$${Math.round(roundedValue / 1000)}k` : `$${roundedValue}`
+			};
+		})
+	);
+
 	const currentFilterKey = $derived(
 		JSON.stringify({
-			budgetMin,
-			budgetMax,
-			yearMin,
-			yearMax,
+			budgetRange,
+			ageMin,
+			ageMax,
 			preferredBrand,
 			bodyType,
 			usageType
@@ -131,6 +143,10 @@
 
 		const parsed = Number(normalized);
 		return Number.isNaN(parsed) ? undefined : parsed;
+	}
+
+	function formatCurrency(value: number) {
+		return `$${Math.round(value).toLocaleString()}`;
 	}
 
 	async function loadBrands() {
@@ -177,22 +193,49 @@
 		}
 	}
 
+	async function loadBudgetRange() {
+		isLoadingBudgetRange = true;
+		requestError = '';
+
+		try {
+			const response = await fetch('/api/budget-range');
+			if (!response.ok) {
+				throw new Error('Unable to load budget range.');
+			}
+
+			const data = await response.json();
+			const nextMax =
+				typeof data?.max === 'number' && Number.isFinite(data.max) && data.max > 0
+					? Math.round(data.max)
+					: 50000;
+
+			priceRangeMax = nextMax;
+			budgetRange = [0, nextMax];
+		} catch (error) {
+			requestError = error instanceof Error ? error.message : 'Unable to load budget range.';
+			priceRangeMax = 50000;
+			budgetRange = [0, 50000];
+		} finally {
+			isLoadingBudgetRange = false;
+		}
+	}
+
 	async function submitPreferences() {
 		isSubmitting = true;
 		requestError = '';
 
-		const minBudgetValue = parseOptionalNumber(budgetMin);
-		const maxBudgetValue = parseOptionalNumber(budgetMax);
-		const minYearValue = parseOptionalNumber(yearMin);
-		const maxYearValue = parseOptionalNumber(yearMax);
+		const minBudgetValue = budgetRange[0];
+		const maxBudgetValue = budgetRange[1];
+		const minAgeValue = parseOptionalNumber(ageMin);
+		const maxAgeValue = parseOptionalNumber(ageMax);
 
 		if (
 			(typeof minBudgetValue === 'number' &&
 				typeof maxBudgetValue === 'number' &&
 				minBudgetValue > maxBudgetValue) ||
-			(typeof minYearValue === 'number' &&
-				typeof maxYearValue === 'number' &&
-				minYearValue > maxYearValue)
+			(typeof minAgeValue === 'number' &&
+				typeof maxAgeValue === 'number' &&
+				minAgeValue > maxAgeValue)
 		) {
 			requestError = 'Minimum values cannot be higher than maximum values.';
 			isSubmitting = false;
@@ -206,10 +249,10 @@
 					'content-type': 'application/json'
 				},
 				body: JSON.stringify({
-					budgetMin,
-					budgetMax,
-					yearMin,
-					yearMax,
+					budgetMin: minBudgetValue,
+					budgetMax: maxBudgetValue,
+					ageMin,
+					ageMax,
 					brand: preferredBrand,
 					bodyType,
 					usageType
@@ -313,6 +356,7 @@
 	}
 
 	onMount(async () => {
+		await loadBudgetRange();
 		await loadBrands();
 		await loadBodyTypes('');
 	});
@@ -353,51 +397,63 @@
 						void submitPreferences();
 					}}
 				>
-					<div class="grid gap-5 sm:grid-cols-2">
-						<label class="space-y-2">
-							<span class="text-sm font-semibold text-slate-200">Minimum budget (USD)</span>
-							<input
-								bind:value={budgetMin}
-								type="number"
-								min="0"
-								placeholder="e.g. 5000"
-								class="w-full rounded-[1.2rem] border border-white/10 bg-black px-4 py-2.5 text-white placeholder:text-slate-600 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-700"
-							/>
-						</label>
+					<div class="space-y-3">
+						<div class="flex flex-wrap items-start justify-between gap-3">
+							<div>
+								<span class="text-sm font-semibold text-slate-200">Budget range (USD)</span>
+							</div>
+							<div class="flex flex-wrap gap-2 text-sm">
+								<div class="rounded-full border border-white/10 bg-black px-3 py-1.5 text-slate-300">
+									Min: <span class="font-semibold text-white">{formatCurrency(budgetRange[0])}</span>
+								</div>
+								<div class="rounded-full border border-white/10 bg-black px-3 py-1.5 text-slate-300">
+									Max: <span class="font-semibold text-white">{formatCurrency(budgetRange[1])}</span>
+								</div>
+							</div>
+						</div>
 
-						<label class="space-y-2">
-							<span class="text-sm font-semibold text-slate-200">Maximum budget (USD)</span>
-							<input
-								bind:value={budgetMax}
-								type="number"
-								min="0"
-								placeholder="e.g. 12000"
-								class="w-full rounded-[1.2rem] border border-white/10 bg-black px-4 py-2.5 text-white placeholder:text-slate-600 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-700"
-							/>
-						</label>
+						<Slider.Root
+							bind:value={budgetRange}
+							type="multiple"
+							min={0}
+							max={priceRangeMax}
+							step={100}
+							disabled={isLoadingBudgetRange}
+							class="py-3"
+						/>
+
+						<div class="flex justify-between text-xs text-slate-500">
+							{#each budgetTicks as tick}
+								<span>{tick.label}</span>
+							{/each}
+						</div>
+
+						{#if isLoadingBudgetRange}
+							<p class="text-sm text-slate-500">Loading budget range...</p>
+						{/if}
 					</div>
 
 					<div class="grid gap-5 sm:grid-cols-2">
 						<label class="space-y-2">
-							<span class="text-sm font-semibold text-slate-200">Minimum year</span>
+							<span class="text-sm font-semibold text-slate-200">Minimum car age</span>
 							<input
-								bind:value={yearMin}
+								bind:value={ageMin}
 								type="number"
-								min="1900"
-								max="2100"
-								placeholder="e.g. 2015"
+								min="0"
+								max="100"
+								placeholder="e.g. 2"
 								class="w-full rounded-[1.2rem] border border-white/10 bg-black px-4 py-2.5 text-white placeholder:text-slate-600 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-700"
 							/>
 						</label>
 
 						<label class="space-y-2">
-							<span class="text-sm font-semibold text-slate-200">Maximum year</span>
+							<span class="text-sm font-semibold text-slate-200">Maximum car age</span>
 							<input
-								bind:value={yearMax}
+								bind:value={ageMax}
 								type="number"
-								min="1900"
-								max="2100"
-								placeholder="e.g. 2022"
+								min="0"
+								max="100"
+								placeholder="e.g. 10"
 								class="w-full rounded-[1.2rem] border border-white/10 bg-black px-4 py-2.5 text-white placeholder:text-slate-600 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-700"
 							/>
 						</label>
@@ -585,44 +641,40 @@
 					</div>
 				</div>
 
-				<ScrollArea.Root
-					class="mt-4 lg:h-124"
-					orientation="vertical"
-					scrollbarYClasses="w-2.5"
-				>
+				<ScrollArea.Root class="mt-4 lg:h-[31rem]" orientation="vertical" scrollbarYClasses="w-2.5">
 					<div class="space-y-3 pr-3">
-					{#if resultsStale}
-						<div class="rounded-[1.4rem] border border-amber-500/20 bg-amber-500/10 p-5 text-sm leading-6 text-amber-100">
-							The current inputs are different from the last submitted search. Click
-							"Get recommendations" again to refresh the results for this budget range.
-						</div>
-					{:else if recommendations.length > 0}
-						{#each recommendations as car}
-							<button
-								type="button"
-								class={`w-full rounded-[1.3rem] border bg-black p-3.5 text-left transition ${
-									selectedRecommendation &&
-									`${car.manufacturer_name}-${car.model_name}-${car.year_produced}-${car.price_usd}` ===
-										`${selectedRecommendation.manufacturer_name}-${selectedRecommendation.model_name}-${selectedRecommendation.year_produced}-${selectedRecommendation.price_usd}`
-										? 'border-white/30 bg-white/5'
-										: 'border-white/10 hover:border-white/20'
-								}`}
-								onclick={() =>
-									(selectedRecommendationKey = `${car.manufacturer_name}-${car.model_name}-${car.year_produced}-${car.price_usd}`)}
-							>
-								<p class="text-base font-bold text-white">{car.manufacturer_name} {car.model_name}</p>
-								<p class="mt-1 text-sm leading-5 text-slate-400">
-									{car.body_type} · {car.year_produced || 'Year unknown'} · {car.transmission || 'Transmission unknown'}
-								</p>
-								<p class="mt-3 text-sm text-slate-500">{car.engine_fuel || 'Fuel unknown'}</p>
-								<p class="mt-2 text-[15px] font-semibold text-white">${car.price_usd.toLocaleString()}</p>
-							</button>
-						{/each}
-					{:else}
-						<div class="rounded-[1.4rem] border border-dashed border-white/10 bg-black p-5 text-sm leading-6 text-slate-500">
-							Submit the form to see matching cars.
-						</div>
-					{/if}
+						{#if resultsStale}
+							<div class="rounded-[1.4rem] border border-amber-500/20 bg-amber-500/10 p-5 text-sm leading-6 text-amber-100">
+								The current inputs are different from the last submitted search. Click
+								"Get recommendations" again to refresh the results for this budget range.
+							</div>
+						{:else if recommendations.length > 0}
+							{#each recommendations as car}
+								<button
+									type="button"
+									class={`w-full rounded-[1.3rem] border bg-black p-3.5 text-left transition ${
+										selectedRecommendation &&
+										`${car.manufacturer_name}-${car.model_name}-${car.year_produced}-${car.price_usd}` ===
+											`${selectedRecommendation.manufacturer_name}-${selectedRecommendation.model_name}-${selectedRecommendation.year_produced}-${selectedRecommendation.price_usd}`
+											? 'border-white/30 bg-white/5'
+											: 'border-white/10 hover:border-white/20'
+									}`}
+									onclick={() =>
+										(selectedRecommendationKey = `${car.manufacturer_name}-${car.model_name}-${car.year_produced}-${car.price_usd}`)}
+								>
+									<p class="text-base font-bold text-white">{car.manufacturer_name} {car.model_name}</p>
+									<p class="mt-1 text-sm leading-5 text-slate-400">
+										{car.body_type} · {car.year_produced || 'Year unknown'} · {car.transmission || 'Transmission unknown'}
+									</p>
+									<p class="mt-3 text-sm text-slate-500">{car.engine_fuel || 'Fuel unknown'}</p>
+									<p class="mt-2 text-[15px] font-semibold text-white">${car.price_usd.toLocaleString()}</p>
+								</button>
+							{/each}
+						{:else}
+							<div class="rounded-[1.4rem] border border-dashed border-white/10 bg-black p-5 text-sm leading-6 text-slate-500">
+								Submit the form to see matching cars.
+							</div>
+						{/if}
 					</div>
 				</ScrollArea.Root>
 			</aside>
@@ -756,6 +808,14 @@
 	:global(.combobox-popover [data-slot='command-item'][data-selected]) {
 		background: rgb(23 23 23);
 		color: white;
+	}
+
+	:global([data-slot='slider-track']) {
+		background: rgb(23 23 23);
+	}
+
+	:global([data-slot='slider-range']) {
+		background: white;
 	}
 
 	:global(.depreciation-tooltip-root) {
