@@ -5,6 +5,7 @@ export type CarRecord = {
 	manufacturer_name: string;
 	model_name: string;
 	body_type: string;
+	drivetrain: string;
 	price_usd: number;
 	year_produced: string;
 	odometer_value: number;
@@ -82,6 +83,7 @@ async function loadCars() {
 				manufacturer_name: manufacturer,
 				model_name: modelName,
 				body_type: bodyType,
+				drivetrain: columns[headerIndex.drivetrain]?.trim() ?? '',
 				price_usd: priceValue,
 				year_produced: columns[headerIndex.year_produced]?.trim() ?? '',
 				odometer_value: Number.isNaN(odometerValue) ? 0 : odometerValue,
@@ -130,6 +132,11 @@ export async function getPriceBounds() {
 	};
 }
 
+export async function getDrivetrains() {
+	const cars = await loadCars();
+	return sortText(new Set(cars.map((car) => car.drivetrain).filter(Boolean)));
+}
+
 export async function getRecommendations(filters: {
 	budgetMin?: number;
 	budgetMax?: number;
@@ -137,6 +144,7 @@ export async function getRecommendations(filters: {
 	ageMax?: number;
 	brand?: string;
 	bodyType?: string;
+	drivetrain?: string;
 	usageType?: string;
 }) {
 	const cars = await loadCars();
@@ -188,6 +196,7 @@ export async function getRecommendations(filters: {
 	const filteredCars = cars
 		.filter((car) => (filters.brand ? car.manufacturer_name.toLowerCase() === filters.brand.toLowerCase() : true))
 		.filter((car) => (filters.bodyType ? car.body_type.toLowerCase() === filters.bodyType.toLowerCase() : true))
+		.filter((car) => (filters.drivetrain ? car.drivetrain.toLowerCase() === filters.drivetrain.toLowerCase() : true))
 		.filter((car) => (typeof filters.budgetMin === 'number' ? car.price_usd >= filters.budgetMin : true))
 		.filter((car) => (typeof filters.budgetMax === 'number' ? car.price_usd <= filters.budgetMax : true))
 		.filter((car) => {

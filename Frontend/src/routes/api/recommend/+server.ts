@@ -22,6 +22,7 @@ export async function POST({ request }) {
 	const ageMax = toNumber(payload.ageMax);
 	const brand = typeof payload.brand === 'string' ? payload.brand.trim() : '';
 	const bodyType = typeof payload.bodyType === 'string' ? payload.bodyType.trim() : '';
+	const drivetrain = typeof payload.drivetrain === 'string' ? payload.drivetrain.trim() : '';
 	const usageType = typeof payload.usageType === 'string' ? payload.usageType.trim() : '';
 
 	const recommendations = await getRecommendations({
@@ -31,6 +32,7 @@ export async function POST({ request }) {
 		ageMax,
 		brand: brand || undefined,
 		bodyType: bodyType || undefined,
+		drivetrain: drivetrain || undefined,
 		usageType: usageType || undefined
 	});
 
@@ -43,6 +45,7 @@ export async function POST({ request }) {
 			ageMax,
 			brand: brand || undefined,
 			bodyType: bodyType || undefined,
+			drivetrain: drivetrain || undefined,
 			usageType: usageType || undefined
 		},
 		count: recommendations.length,

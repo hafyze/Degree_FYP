@@ -8,6 +8,17 @@
 	import { Button } from '$lib/components/ui/button';
 	import { cn } from '$lib/utils';
 	import { LineChart } from 'layerchart';
+	import cabrioletIcon from '$lib/assets/car-icon/cabriolet.png';
+	import coupeIcon from '$lib/assets/car-icon/coupe.png';
+	import hatchbackIcon from '$lib/assets/car-icon/hatchback.png';
+	import liftbackIcon from '$lib/assets/car-icon/liftback.png';
+	import limousineIcon from '$lib/assets/car-icon/limousie.png';
+	import minivanIcon from '$lib/assets/car-icon/minivan.png';
+	import pickupIcon from '$lib/assets/car-icon/pickup.png';
+	import sedanIcon from '$lib/assets/car-icon/sedan.png';
+	import suvIcon from '$lib/assets/car-icon/suv.png';
+	import vanIcon from '$lib/assets/car-icon/van.png';
+	import wagonIcon from '$lib/assets/car-icon/wagon.png';
 
 	type UsageType = 'daily' | 'road-trips' | 'weekend';
 
@@ -15,6 +26,7 @@
 		manufacturer_name: string;
 		model_name: string;
 		body_type: string;
+		drivetrain?: string;
 		price_usd: number;
 		year_produced: string;
 		odometer_value?: number;
@@ -40,6 +52,29 @@
 		{ value: 'weekend', label: 'Weekend use', description: 'For occasional drives and leisure use.' }
 	];
 
+	const drivetrainLabels: Record<string, string> = {
+		all: 'All-wheel drive (AWD)',
+		front: 'Front-wheel drive (FWD)',
+		rear: 'Rear-wheel drive (RWD)'
+	};
+
+	const fallbackDrivetrains = ['all', 'front', 'rear'];
+
+	const bodyTypeIconMap: Record<string, string> = {
+		cabriolet: cabrioletIcon,
+		coupe: coupeIcon,
+		hatchback: hatchbackIcon,
+		liftback: liftbackIcon,
+		limousine: limousineIcon,
+		minibus: vanIcon,
+		minivan: minivanIcon,
+		pickup: pickupIcon,
+		sedan: sedanIcon,
+		suv: suvIcon,
+		van: vanIcon,
+		wagon: wagonIcon
+	};
+
 	const chartConfig = {
 		depreciation: {
 			label: 'Predicted value',
@@ -53,14 +88,17 @@
 	let ageMax = $state('');
 	let preferredBrand = $state('');
 	let bodyType = $state('');
+	let drivetrain = $state('');
 	let usageType = $state<UsageType>('daily');
 
 	let brands = $state<string[]>([]);
 	let bodyTypes = $state<string[]>([]);
+	let drivetrains = $state<string[]>([]);
 	let recommendations = $state<Recommendation[]>([]);
 	let depreciationData = $state<DepreciationPoint[]>([]);
 	let isLoadingBrands = $state(true);
 	let isLoadingBodyTypes = $state(false);
+	let isLoadingDrivetrains = $state(true);
 	let isLoadingBudgetRange = $state(true);
 	let isSubmitting = $state(false);
 	let isLoadingDepreciation = $state(false);
@@ -68,8 +106,10 @@
 	let depreciationError = $state('');
 	let brandOpen = $state(false);
 	let bodyTypeOpen = $state(false);
+	let drivetrainOpen = $state(false);
 	let brandTriggerRef = $state<HTMLButtonElement>(null!);
 	let bodyTypeTriggerRef = $state<HTMLButtonElement>(null!);
+	let drivetrainTriggerRef = $state<HTMLButtonElement>(null!);
 	let lastSubmittedFilters = $state<string | null>(null);
 	let selectedRecommendationKey = $state('');
 
@@ -78,12 +118,26 @@
 	);
 
 	const brandOptions = $derived(brands.map((brand) => ({ value: brand, label: brand })));
-	const bodyTypeOptions = $derived(bodyTypes.map((item) => ({ value: item, label: item })));
+	const bodyTypeOptions = $derived(
+		bodyTypes.map((item) => ({
+			value: item,
+			label: item,
+			icon: bodyTypeIconMap[item]
+		}))
+	);
+	const drivetrainOptions = $derived(
+		drivetrains.map((item) => ({
+			value: item,
+			label: drivetrainLabels[item] ?? item
+		}))
+	);
 	const selectedBrandLabel = $derived(
 		brandOptions.find((option) => option.value === preferredBrand)?.label
 	);
-	const selectedBodyTypeLabel = $derived(
-		bodyTypeOptions.find((option) => option.value === bodyType)?.label
+	const selectedBodyTypeOption = $derived(bodyTypeOptions.find((option) => option.value === bodyType));
+	const selectedBodyTypeLabel = $derived(selectedBodyTypeOption?.label);
+	const selectedDrivetrainLabel = $derived(
+		drivetrainOptions.find((option) => option.value === drivetrain)?.label
 	);
 
 	const budgetTicks = $derived(
@@ -91,7 +145,6 @@
 			const rawValue = (priceRangeMax / 5) * index;
 			const roundedValue = index === 5 ? priceRangeMax : Math.round(rawValue / 1000) * 1000;
 			return {
-				value: roundedValue,
 				label: roundedValue >= 1000 ? `$${Math.round(roundedValue / 1000)}k` : `$${roundedValue}`
 			};
 		})
@@ -104,6 +157,7 @@
 			ageMax,
 			preferredBrand,
 			bodyType,
+			drivetrain,
 			usageType
 		})
 	);
@@ -149,16 +203,17 @@
 		return `$${Math.round(value).toLocaleString()}`;
 	}
 
+	function getBodyTypeIcon(bodyTypeValue: string) {
+		return bodyTypeIconMap[bodyTypeValue.toLowerCase()];
+	}
+
 	async function loadBrands() {
 		isLoadingBrands = true;
 		requestError = '';
 
 		try {
 			const response = await fetch('/api/brands');
-			if (!response.ok) {
-				throw new Error('Unable to load brands.');
-			}
-
+			if (!response.ok) throw new Error('Unable to load brands.');
 			const data = await response.json();
 			brands = data.brands ?? [];
 		} catch (error) {
@@ -175,21 +230,30 @@
 		try {
 			const query = brand ? `?brand=${encodeURIComponent(brand)}` : '';
 			const response = await fetch(`/api/body-types${query}`);
-
-			if (!response.ok) {
-				throw new Error('Unable to load body types.');
-			}
-
+			if (!response.ok) throw new Error('Unable to load body types.');
 			const data = await response.json();
 			bodyTypes = data.bodyTypes ?? [];
-			if (bodyType && !bodyTypes.includes(bodyType)) {
-				bodyType = '';
-			}
+			if (bodyType && !bodyTypes.includes(bodyType)) bodyType = '';
 		} catch (error) {
 			requestError = error instanceof Error ? error.message : 'Unable to load body types.';
 			bodyTypes = [];
 		} finally {
 			isLoadingBodyTypes = false;
+		}
+	}
+
+	async function loadDrivetrains() {
+		isLoadingDrivetrains = true;
+
+		try {
+			const response = await fetch('/api/drivetrains');
+			if (!response.ok) throw new Error('Unable to load drivetrains.');
+			const data = await response.json();
+			drivetrains = data.drivetrains ?? fallbackDrivetrains;
+		} catch {
+			drivetrains = fallbackDrivetrains;
+		} finally {
+			isLoadingDrivetrains = false;
 		}
 	}
 
@@ -199,10 +263,7 @@
 
 		try {
 			const response = await fetch('/api/budget-range');
-			if (!response.ok) {
-				throw new Error('Unable to load budget range.');
-			}
-
+			if (!response.ok) throw new Error('Unable to load budget range.');
 			const data = await response.json();
 			const nextMax =
 				typeof data?.max === 'number' && Number.isFinite(data.max) && data.max > 0
@@ -245,9 +306,7 @@
 		try {
 			const response = await fetch('/api/recommend', {
 				method: 'POST',
-				headers: {
-					'content-type': 'application/json'
-				},
+				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({
 					budgetMin: minBudgetValue,
 					budgetMax: maxBudgetValue,
@@ -255,13 +314,12 @@
 					ageMax,
 					brand: preferredBrand,
 					bodyType,
+					drivetrain,
 					usageType
 				})
 			});
 
-			if (!response.ok) {
-				throw new Error('Unable to load recommendations.');
-			}
+			if (!response.ok) throw new Error('Unable to load recommendations.');
 
 			const data = await response.json();
 			recommendations = data.recommendations ?? [];
@@ -294,6 +352,13 @@
 		bodyTypeTriggerRef?.focus();
 	}
 
+	async function selectDrivetrain(nextDrivetrain: string) {
+		drivetrain = nextDrivetrain;
+		drivetrainOpen = false;
+		await tick();
+		drivetrainTriggerRef?.focus();
+	}
+
 	async function loadDepreciationForecast(car: Recommendation) {
 		isLoadingDepreciation = true;
 		depreciationError = '';
@@ -301,9 +366,7 @@
 		try {
 			const response = await fetch('/api/depreciation', {
 				method: 'POST',
-				headers: {
-					'content-type': 'application/json'
-				},
+				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({
 					manufacturer_name: car.manufacturer_name,
 					model_name: car.model_name,
@@ -316,12 +379,9 @@
 			});
 
 			const data = await response.json();
-
 			if (!response.ok) {
 				throw new Error(
-					typeof data?.message === 'string'
-						? data.message
-						: 'Unable to load depreciation prediction.'
+					typeof data?.message === 'string' ? data.message : 'Unable to load depreciation prediction.'
 				);
 			}
 
@@ -332,8 +392,7 @@
 							typeof point.predicted_price_usd === 'number'
 								? point.predicted_price_usd
 								: Number(point.predicted_price_usd ?? 0),
-						car_age:
-							typeof point.car_age === 'number' ? point.car_age : Number(point.car_age ?? 0),
+						car_age: typeof point.car_age === 'number' ? point.car_age : Number(point.car_age ?? 0),
 						odometer_value:
 							typeof point.odometer_value === 'number'
 								? point.odometer_value
@@ -359,6 +418,7 @@
 		await loadBudgetRange();
 		await loadBrands();
 		await loadBodyTypes('');
+		await loadDrivetrains();
 	});
 
 	$effect(() => {
@@ -375,10 +435,7 @@
 
 <svelte:head>
 	<title>Preference Input</title>
-	<meta
-		name="description"
-		content="Vehicle preference input page with recommendations and depreciation chart."
-	/>
+	<meta name="description" content="Vehicle preference input page with recommendations and depreciation chart." />
 </svelte:head>
 
 <div class="min-h-screen bg-black text-slate-100">
@@ -480,36 +537,17 @@
 								</Popover.Trigger>
 								<Popover.Content class="combobox-popover w-[var(--bits-popover-anchor-width)] !border-white/10 !bg-neutral-950 p-0 !text-white !ring-0">
 									<Command.Root>
-										<Command.Input
-											placeholder="Search brand..."
-											class="!bg-transparent !text-white placeholder:!text-slate-500 focus-visible:!ring-0 focus-visible:!outline-none"
-										/>
+										<Command.Input placeholder="Search brand..." class="!bg-transparent !text-white placeholder:!text-slate-500 focus-visible:!ring-0 focus-visible:!outline-none" />
 										<Command.List class="bg-neutral-950">
 											<Command.Empty>No brand found.</Command.Empty>
 											<Command.Group value="brands">
-												<Command.Item
-													value=""
-													class="text-slate-200 data-selected:!bg-neutral-900 data-selected:!text-white"
-													onSelect={() => {
-														void selectBrand('');
-													}}
-												>
-													<span class={cn('mr-2 text-xs', preferredBrand ? 'text-transparent' : 'text-white')}>
-														✓
-													</span>
+												<Command.Item value="" class="text-slate-200 data-selected:!bg-neutral-900 data-selected:!text-white" onSelect={() => void selectBrand('')}>
+													<span class={cn('mr-2 text-xs', preferredBrand ? 'text-transparent' : 'text-white')}>✓</span>
 													Any brand
 												</Command.Item>
 												{#each brandOptions as brand (brand.value)}
-													<Command.Item
-														value={brand.value}
-														class="text-slate-200 data-selected:!bg-neutral-900 data-selected:!text-white"
-														onSelect={() => {
-															void selectBrand(brand.value);
-														}}
-													>
-														<span class={cn('mr-2 text-xs', preferredBrand !== brand.value && 'text-transparent')}>
-															✓
-														</span>
+													<Command.Item value={brand.value} class="text-slate-200 data-selected:!bg-neutral-900 data-selected:!text-white" onSelect={() => void selectBrand(brand.value)}>
+														<span class={cn('mr-2 text-xs', preferredBrand !== brand.value && 'text-transparent')}>✓</span>
 														{brand.label}
 													</Command.Item>
 												{/each}
@@ -536,43 +574,33 @@
 											aria-expanded={bodyTypeOpen}
 											disabled={isLoadingBodyTypes}
 										>
-											{selectedBodyTypeLabel || 'Any body type'}
+											<span class="flex items-center gap-3 overflow-hidden">
+												{#if selectedBodyTypeOption?.icon}
+													<img src={selectedBodyTypeOption.icon} alt={selectedBodyTypeOption.label} class="h-5 w-5 object-contain opacity-80" />
+												{/if}
+												<span class="truncate">{selectedBodyTypeLabel || 'Any body type'}</span>
+											</span>
 											<span class="text-xs text-slate-500">v</span>
 										</Button>
 									{/snippet}
 								</Popover.Trigger>
 								<Popover.Content class="combobox-popover w-[var(--bits-popover-anchor-width)] !border-white/10 !bg-neutral-950 p-0 !text-white !ring-0">
 									<Command.Root>
-										<Command.Input
-											placeholder="Search body type..."
-											class="!bg-transparent !text-white placeholder:!text-slate-500 focus-visible:!ring-0 focus-visible:!outline-none"
-										/>
+										<Command.Input placeholder="Search body type..." class="!bg-transparent !text-white placeholder:!text-slate-500 focus-visible:!ring-0 focus-visible:!outline-none" />
 										<Command.List class="bg-neutral-950">
 											<Command.Empty>No body type found.</Command.Empty>
 											<Command.Group value="body-types">
-												<Command.Item
-													value=""
-													class="text-slate-200 data-selected:!bg-neutral-900 data-selected:!text-white"
-													onSelect={() => {
-														void selectBodyType('');
-													}}
-												>
-													<span class={cn('mr-2 text-xs', bodyType ? 'text-transparent' : 'text-white')}>
-														✓
-													</span>
+												<Command.Item value="" class="text-slate-200 data-selected:!bg-neutral-900 data-selected:!text-white" onSelect={() => void selectBodyType('')}>
+													<span class={cn('mr-2 text-xs', bodyType ? 'text-transparent' : 'text-white')}>✓</span>
+													<span class="mr-3 inline-flex h-5 w-5 items-center justify-center rounded-full border border-white/10 text-[10px] text-slate-500">-</span>
 													Any body type
 												</Command.Item>
 												{#each bodyTypeOptions as option (option.value)}
-													<Command.Item
-														value={option.value}
-														class="text-slate-200 data-selected:!bg-neutral-900 data-selected:!text-white"
-														onSelect={() => {
-															void selectBodyType(option.value);
-														}}
-													>
-														<span class={cn('mr-2 text-xs', bodyType !== option.value && 'text-transparent')}>
-															✓
-														</span>
+													<Command.Item value={option.value} class="text-slate-200 data-selected:!bg-neutral-900 data-selected:!text-white" onSelect={() => void selectBodyType(option.value)}>
+														<span class={cn('mr-2 text-xs', bodyType !== option.value && 'text-transparent')}>✓</span>
+														{#if option.icon}
+															<img src={option.icon} alt={option.label} class="mr-3 h-5 w-5 object-contain opacity-80" />
+														{/if}
 														{option.label}
 													</Command.Item>
 												{/each}
@@ -585,6 +613,50 @@
 								<p class="text-sm text-slate-500">Loading body types...</p>
 							{/if}
 						</div>
+					</div>
+
+					<div class="space-y-2">
+						<span class="text-sm font-semibold text-slate-200">Drivetrain</span>
+						<Popover.Root bind:open={drivetrainOpen}>
+							<Popover.Trigger bind:ref={drivetrainTriggerRef}>
+								{#snippet child({ props })}
+									<Button
+										{...props}
+										variant="outline"
+										class="h-11 w-full justify-between rounded-[1.2rem] !border-white/10 !bg-black px-4 !text-white hover:!bg-neutral-900 focus-visible:!ring-0 focus-visible:!outline-none"
+										role="combobox"
+										aria-expanded={drivetrainOpen}
+										disabled={isLoadingDrivetrains}
+									>
+										{selectedDrivetrainLabel || 'Any drivetrain'}
+										<span class="text-xs text-slate-500">v</span>
+									</Button>
+								{/snippet}
+							</Popover.Trigger>
+							<Popover.Content class="combobox-popover w-[var(--bits-popover-anchor-width)] !border-white/10 !bg-neutral-950 p-0 !text-white !ring-0">
+								<Command.Root>
+									<Command.Input placeholder="Search drivetrain..." class="!bg-transparent !text-white placeholder:!text-slate-500 focus-visible:!ring-0 focus-visible:!outline-none" />
+									<Command.List class="bg-neutral-950">
+										<Command.Empty>No drivetrain found.</Command.Empty>
+										<Command.Group value="drivetrains">
+											<Command.Item value="" class="text-slate-200 data-selected:!bg-neutral-900 data-selected:!text-white" onSelect={() => void selectDrivetrain('')}>
+												<span class={cn('mr-2 text-xs', drivetrain ? 'text-transparent' : 'text-white')}>✓</span>
+												Any drivetrain
+											</Command.Item>
+											{#each drivetrainOptions as option (option.value)}
+												<Command.Item value={option.value} class="text-slate-200 data-selected:!bg-neutral-900 data-selected:!text-white" onSelect={() => void selectDrivetrain(option.value)}>
+													<span class={cn('mr-2 text-xs', drivetrain !== option.value && 'text-transparent')}>✓</span>
+													{option.label}
+												</Command.Item>
+											{/each}
+										</Command.Group>
+									</Command.List>
+								</Command.Root>
+							</Popover.Content>
+						</Popover.Root>
+						{#if isLoadingDrivetrains}
+							<p class="text-sm text-slate-500">Loading drivetrains...</p>
+						{/if}
 					</div>
 
 					<div class="space-y-2.5">
@@ -618,12 +690,7 @@
 
 					<div class="flex items-center justify-between border-t border-white/10 pt-5">
 						<p class="text-sm text-slate-500">Dataset filter and recommendation system.</p>
-						<Button
-							type="submit"
-							size="lg"
-							class="h-10 rounded-full bg-white px-5 text-sm font-semibold text-black hover:bg-slate-200"
-							disabled={isSubmitting}
-						>
+						<Button type="submit" size="lg" class="h-10 rounded-full bg-white px-5 text-sm font-semibold text-black hover:bg-slate-200" disabled={isSubmitting}>
 							{isSubmitting ? 'Loading...' : 'Get recommendations'}
 						</Button>
 					</div>
@@ -645,8 +712,7 @@
 					<div class="space-y-3 pr-3">
 						{#if resultsStale}
 							<div class="rounded-[1.4rem] border border-amber-500/20 bg-amber-500/10 p-5 text-sm leading-6 text-amber-100">
-								The current inputs are different from the last submitted search. Click
-								"Get recommendations" again to refresh the results for this budget range.
+								The current inputs are different from the last submitted search. Click "Get recommendations" again to refresh the results for this budget range.
 							</div>
 						{:else if recommendations.length > 0}
 							{#each recommendations as car}
@@ -662,12 +728,22 @@
 									onclick={() =>
 										(selectedRecommendationKey = `${car.manufacturer_name}-${car.model_name}-${car.year_produced}-${car.price_usd}`)}
 								>
-									<p class="text-base font-bold text-white">{car.manufacturer_name} {car.model_name}</p>
-									<p class="mt-1 text-sm leading-5 text-slate-400">
-										{car.body_type} · {car.year_produced || 'Year unknown'} · {car.transmission || 'Transmission unknown'}
-									</p>
-									<p class="mt-3 text-sm text-slate-500">{car.engine_fuel || 'Fuel unknown'}</p>
-									<p class="mt-2 text-[15px] font-semibold text-white">${car.price_usd.toLocaleString()}</p>
+									<div class="flex items-start gap-3">
+										{#if getBodyTypeIcon(car.body_type)}
+											<img src={getBodyTypeIcon(car.body_type)} alt={car.body_type} class="mt-1 h-9 w-9 object-contain opacity-85" />
+										{/if}
+										<div class="min-w-0 flex-1">
+											<p class="text-base font-bold text-white">{car.manufacturer_name} {car.model_name}</p>
+											<p class="mt-1 text-sm leading-5 text-slate-400">
+												{car.body_type} · {car.year_produced || 'Year unknown'} · {car.transmission || 'Transmission unknown'}
+											</p>
+											<p class="mt-2 text-sm text-slate-500">
+												{drivetrainLabels[car.drivetrain ?? ''] ?? car.drivetrain ?? 'Drivetrain unknown'}
+											</p>
+											<p class="mt-1 text-sm text-slate-500">{car.engine_fuel || 'Fuel unknown'}</p>
+											<p class="mt-2 text-[15px] font-semibold text-white">${car.price_usd.toLocaleString()}</p>
+										</div>
+									</div>
 								</button>
 							{/each}
 						{:else}
@@ -688,9 +764,7 @@
 				</div>
 				{#if selectedRecommendation}
 					<div class="text-sm text-slate-400">
-						<span class="font-semibold text-white">
-							{selectedRecommendation.manufacturer_name} {selectedRecommendation.model_name}
-						</span>
+						<span class="font-semibold text-white">{selectedRecommendation.manufacturer_name} {selectedRecommendation.model_name}</span>
 						<span> · {selectedRecommendation.year_produced || 'Year unknown'} · ${selectedRecommendation.price_usd.toLocaleString()}</span>
 					</div>
 				{/if}
@@ -713,11 +787,7 @@
 						<div class="rounded-full border border-white/10 bg-black px-4 py-2">
 							Estimated 5-year drop:
 							<span class="font-semibold text-white">
-								{Math.round(
-									((selectedRecommendation.price_usd - depreciationData[depreciationData.length - 1].predicted_price_usd) /
-										selectedRecommendation.price_usd) *
-										100
-								)}%
+								{Math.round(((selectedRecommendation.price_usd - depreciationData[depreciationData.length - 1].predicted_price_usd) / selectedRecommendation.price_usd) * 100)}%
 							</span>
 						</div>
 					</div>
@@ -736,18 +806,12 @@
 								}
 							]}
 							props={{
-								xAxis: {
-									format: (value: unknown) => `${value ?? ''}`
-								},
+								xAxis: { format: (value: unknown) => `${value ?? ''}` },
 								yAxis: {
 									format: (value: unknown) =>
 										typeof value === 'number' ? `$${value.toLocaleString()}` : `${value ?? ''}`
 								},
-								tooltip: {
-									root: {
-										class: 'depreciation-tooltip-root'
-									}
-								}
+								tooltip: { root: { class: 'depreciation-tooltip-root' } }
 							}}
 						/>
 					</Chart.ChartContainer>
