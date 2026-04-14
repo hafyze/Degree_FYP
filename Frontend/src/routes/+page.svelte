@@ -8,7 +8,7 @@
 	import * as Chart from '$lib/components/ui/chart';
 	import { Button } from '$lib/components/ui/button';
 	import { cn } from '$lib/utils';
-	import { LineChart } from 'layerchart';
+	import { LineChart, Tooltip as LayerTooltip } from 'layerchart';
 	import cabrioletIcon from '$lib/assets/car-icon/cabriolet.png';
 	import coupeIcon from '$lib/assets/car-icon/coupe.png';
 	import hatchbackIcon from '$lib/assets/car-icon/hatchback.png';
@@ -41,6 +41,15 @@
 		car_age?: number;
 		odometer_value?: number;
 		usage_type?: UsageType;
+	};
+
+	type DepreciationMetric = 'price' | 'depreciation';
+
+	type DepreciationViewPoint = DepreciationPoint & {
+		chart_value: number;
+		depreciation_percent: number;
+		annual_loss_usd: number;
+		value_retention_percent: number;
 	};
 
 	type RecommendationSort = 'recommended' | 'price-asc' | 'price-desc' | 'year-asc' | 'year-desc';
@@ -110,6 +119,7 @@
 	let fuelType = $state('');
 	let usageType = $state<UsageType>('daily');
 	let recommendationSort = $state<RecommendationSort>('recommended');
+	let depreciationMetric = $state<DepreciationMetric>('price');
 
 	let brands = $state<string[]>([]);
 	let bodyTypes = $state<string[]>([]);
@@ -141,6 +151,7 @@
 	let lastObservedPage = $state(1);
 	let totalRecommendations = $state(0);
 	let lastObservedSort = $state<RecommendationSort>('recommended');
+	let depreciationChartContext = $state<any>(null);
 
 	const recommendationsPerPage = 6;
 
@@ -223,6 +234,7 @@
 			selectedRecommendationKey = '';
 			depreciationData = [];
 			depreciationError = '';
+			depreciationChartContext = null;
 		}
 	});
 
@@ -264,8 +276,87 @@
 		);
 	});
 
+	const depreciationViewData = $derived.by(() => {
+		if (!selectedRecommendation) {
+			return [] as DepreciationViewPoint[];
+		}
+
+		const baselinePrice = selectedRecommendation.price_usd;
+
+		return depreciationData.map((point, index, points) => {
+			const previousPoint = points[index - 1];
+			const annualLossUsd = previousPoint
+				? Math.max(0, previousPoint.predicted_price_usd - point.predicted_price_usd)
+				: 0;
+			const depreciationPercent =
+				baselinePrice > 0 ? ((baselinePrice - point.predicted_price_usd) / baselinePrice) * 100 : 0;
+			const valueRetentionPercent =
+				baselinePrice > 0 ? (point.predicted_price_usd / baselinePrice) * 100 : 0;
+
+			return {
+				...point,
+				chart_value:
+					depreciationMetric === 'price'
+						? point.predicted_price_usd
+						: Math.max(0, depreciationPercent),
+				depreciation_percent: Math.max(0, depreciationPercent),
+				annual_loss_usd: annualLossUsd,
+				value_retention_percent: Math.max(0, valueRetentionPercent)
+			};
+		});
+	});
+
+	const hoveredDepreciationPoint = $derived(
+		(depreciationChartContext?.tooltip?.data as DepreciationViewPoint | null | undefined) ?? null
+	);
+
+	const activeDepreciationPoint = $derived.by(
+		() => hoveredDepreciationPoint ?? depreciationViewData[depreciationViewData.length - 1] ?? null
+	);
+
+	const currentCarAge = $derived(depreciationViewData[0]?.car_age ?? null);
+	const finalCarAge = $derived(
+		depreciationViewData.length > 0 ? depreciationViewData[depreciationViewData.length - 1]?.car_age ?? null : null
+	);
+
+	function getForecastPoint(yearOffset: number) {
+		return depreciationViewData[yearOffset] ?? null;
+	}
+
+	const oneYearPoint = $derived(getForecastPoint(1));
+	const threeYearPoint = $derived(getForecastPoint(3));
+	const fiveYearPoint = $derived(getForecastPoint(5) ?? depreciationViewData[depreciationViewData.length - 1] ?? null);
+
+	const depreciationCaption = $derived.by(() => {
+		if (!selectedRecommendation || !fiveYearPoint) {
+			return '';
+		}
+
+		return `Based on this model, the car is projected to retain ${Math.round(fiveYearPoint.value_retention_percent)}% of its current value after 5 years.`;
+	});
+
 	function formatCurrency(value: number) {
 		return `$${Math.round(value).toLocaleString()}`;
+	}
+
+	function formatPercent(value: number, digits = 0) {
+		return `${value.toFixed(digits)}%`;
+	}
+
+	function formatLoss(value?: number | null) {
+		if (typeof value !== 'number' || Number.isNaN(value)) {
+			return 'N/A';
+		}
+
+		return formatCurrency(value);
+	}
+
+	function formatOdometer(value?: number) {
+		if (typeof value !== 'number' || Number.isNaN(value)) {
+			return 'N/A';
+		}
+
+		return `${Math.round(value).toLocaleString()} km`;
 	}
 
 	function getBodyTypeIcon(bodyTypeValue: string) {
@@ -508,6 +599,7 @@
 	async function loadDepreciationForecast(car: Recommendation) {
 		isLoadingDepreciation = true;
 		depreciationError = '';
+		depreciationChartContext = null;
 
 		try {
 			const response = await fetch('/api/depreciation', {
@@ -995,7 +1087,7 @@
 												<Pagination.Link
 													{page}
 													isActive={currentPage === page.value}
-													class="border-white/10 bg-black text-slate-300 hover:bg-neutral-900 hover:text-white data-[active]:bg-white data-[active]:text-black"
+													class="border-white/10 bg-black text-slate-300 hover:bg-neutral-900 hover:text-white data-active:bg-white data-active:text-black"
 												/>
 											{/if}
 										</Pagination.Item>
@@ -1036,42 +1128,220 @@
 					<div class="rounded-[1.4rem] border border-red-500/20 bg-red-500/10 p-5 text-sm leading-6 text-red-200">
 						{depreciationError}
 					</div>
-				{:else if selectedRecommendation && depreciationData.length > 0}
+				{:else if selectedRecommendation && depreciationViewData.length > 0}
 					<div class="mb-4 flex flex-wrap gap-3 text-sm text-slate-400">
 						<div class="rounded-full border border-white/10 bg-black px-4 py-2">
 							Usage: <span class="font-semibold text-white">{selectedUsage.label}</span>
 						</div>
+						<div class="rounded-full border border-dashed border-sky-400/30 bg-sky-500/10 px-4 py-2 text-sky-100">
+							Baseline: <span class="font-semibold text-white">{formatCurrency(selectedRecommendation.price_usd)}</span>
+						</div>
 						<div class="rounded-full border border-white/10 bg-black px-4 py-2">
 							Estimated 5-year drop:
 							<span class="font-semibold text-white">
-								{Math.round(((selectedRecommendation.price_usd - depreciationData[depreciationData.length - 1].predicted_price_usd) / selectedRecommendation.price_usd) * 100)}%
+								{formatPercent(fiveYearPoint?.depreciation_percent ?? 0)}
 							</span>
 						</div>
 					</div>
 
-					<Chart.ChartContainer config={chartConfig} class="h-[250px] w-full">
+					<div class="mb-4 grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
+						<div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+							<div class="rounded-[1.2rem] border border-white/10 bg-black px-4 py-3">
+								<p class="text-xs font-semibold tracking-[0.16em] text-slate-500 uppercase">Current price</p>
+								<p class="mt-2 text-lg font-bold text-white">{formatCurrency(selectedRecommendation.price_usd)}</p>
+							</div>
+							<div class="rounded-[1.2rem] border border-white/10 bg-black px-4 py-3">
+								<p class="text-xs font-semibold tracking-[0.16em] text-slate-500 uppercase">1-year loss</p>
+								<p class="mt-2 text-lg font-bold text-white">
+									{formatLoss(
+										typeof oneYearPoint?.predicted_price_usd === 'number'
+											? selectedRecommendation.price_usd - oneYearPoint.predicted_price_usd
+											: null
+									)}
+								</p>
+							</div>
+							<div class="rounded-[1.2rem] border border-white/10 bg-black px-4 py-3">
+								<p class="text-xs font-semibold tracking-[0.16em] text-slate-500 uppercase">3-year loss</p>
+								<p class="mt-2 text-lg font-bold text-white">
+									{formatLoss(
+										typeof threeYearPoint?.predicted_price_usd === 'number'
+											? selectedRecommendation.price_usd - threeYearPoint.predicted_price_usd
+											: null
+									)}
+								</p>
+							</div>
+							<div class="rounded-[1.2rem] border border-white/10 bg-black px-4 py-3">
+								<p class="text-xs font-semibold tracking-[0.16em] text-slate-500 uppercase">5-year loss</p>
+								<p class="mt-2 text-lg font-bold text-white">
+									{formatLoss(
+										typeof fiveYearPoint?.predicted_price_usd === 'number'
+											? selectedRecommendation.price_usd - fiveYearPoint.predicted_price_usd
+											: null
+									)}
+								</p>
+							</div>
+							<div class="rounded-[1.2rem] border border-white/10 bg-black px-4 py-3">
+								<p class="text-xs font-semibold tracking-[0.16em] text-slate-500 uppercase">Current age</p>
+								<p class="mt-2 text-lg font-bold text-white">
+									{currentCarAge !== null ? `${currentCarAge} years` : 'N/A'}
+								</p>
+							</div>
+							<div class="rounded-[1.2rem] border border-white/10 bg-black px-4 py-3">
+								<p class="text-xs font-semibold tracking-[0.16em] text-slate-500 uppercase">Final projected age</p>
+								<p class="mt-2 text-lg font-bold text-white">
+									{finalCarAge !== null ? `${finalCarAge} years` : 'N/A'}
+								</p>
+							</div>
+						</div>
+
+						<div class="rounded-[1.4rem] border border-white/10 bg-black px-4 py-4">
+							<div class="flex items-start justify-between gap-3">
+								<div>
+									<p class="text-xs font-semibold tracking-[0.16em] text-slate-500 uppercase">Selected year</p>
+									<p class="mt-2 text-xl font-bold text-white">{activeDepreciationPoint?.year ?? 'N/A'}</p>
+								</div>
+								<div class="rounded-full border border-white/10 bg-neutral-950 px-3 py-1 text-xs font-semibold text-slate-300">
+									{hoveredDepreciationPoint ? 'Hovering point' : 'Latest forecast'}
+								</div>
+							</div>
+
+							<div class="mt-4 grid gap-3 sm:grid-cols-2">
+								<div>
+									<p class="text-xs text-slate-500">Projected value</p>
+									<p class="mt-1 text-base font-semibold text-white">
+										{activeDepreciationPoint ? formatCurrency(activeDepreciationPoint.predicted_price_usd) : 'N/A'}
+									</p>
+								</div>
+								<div>
+									<p class="text-xs text-slate-500">Depreciation</p>
+									<p class="mt-1 text-base font-semibold text-white">
+										{activeDepreciationPoint ? formatPercent(activeDepreciationPoint.depreciation_percent, 1) : 'N/A'}
+									</p>
+								</div>
+								<div>
+									<p class="text-xs text-slate-500">Annual loss vs prior year</p>
+									<p class="mt-1 text-base font-semibold text-white">
+										{activeDepreciationPoint ? formatLoss(activeDepreciationPoint.annual_loss_usd) : 'N/A'}
+									</p>
+								</div>
+								<div>
+									<p class="text-xs text-slate-500">Projected odometer</p>
+									<p class="mt-1 text-base font-semibold text-white">
+										{activeDepreciationPoint ? formatOdometer(activeDepreciationPoint.odometer_value) : 'N/A'}
+									</p>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+						<div class="inline-flex rounded-full border border-white/10 bg-black p-1">
+							<button
+								type="button"
+								class={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+									depreciationMetric === 'price'
+										? 'bg-white text-black'
+										: 'text-slate-400 hover:text-white'
+								}`}
+								onclick={() => (depreciationMetric = 'price')}
+							>
+								Price (USD)
+							</button>
+							<button
+								type="button"
+								class={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+									depreciationMetric === 'depreciation'
+										? 'bg-white text-black'
+										: 'text-slate-400 hover:text-white'
+								}`}
+								onclick={() => (depreciationMetric = 'depreciation')}
+							>
+								Depreciation (%)
+							</button>
+						</div>
+					</div>
+
+					<Chart.ChartContainer config={chartConfig} class="h-80 w-full">
 						<LineChart
-							data={depreciationData}
+							bind:context={depreciationChartContext}
+							data={depreciationViewData}
 							x="year"
-							y="predicted_price_usd"
+							y="chart_value"
+							highlight={{
+								lines: { stroke: 'rgba(148, 163, 184, 0.4)' },
+								points: { r: 6, fill: '#ffffff', stroke: '#0f172a', strokeWidth: 2 }
+							}}
 							series={[
 								{
 									key: 'depreciation',
-									label: 'Predicted value',
-									value: 'predicted_price_usd',
+									label: depreciationMetric === 'price' ? 'Predicted value' : 'Depreciation',
+									value: 'chart_value',
 									color: 'var(--color-depreciation)'
 								}
 							]}
+							tooltipContext={{ mode: 'quadtree-x' }}
 							props={{
 								xAxis: { format: (value: unknown) => `${value ?? ''}` },
 								yAxis: {
 									format: (value: unknown) =>
-										typeof value === 'number' ? `$${value.toLocaleString()}` : `${value ?? ''}`
+										typeof value === 'number'
+											? depreciationMetric === 'price'
+												? formatCurrency(value)
+												: formatPercent(value, 0)
+											: `${value ?? ''}`
 								},
 								tooltip: { root: { class: 'depreciation-tooltip-root' } }
 							}}
-						/>
+						>
+							{#snippet tooltip({ context })}
+								<LayerTooltip.Root {context} class="depreciation-tooltip-root">
+									{#snippet children({ data })}
+										<LayerTooltip.Header
+											value={data?.year}
+											color="var(--color-depreciation)"
+										/>
+										<LayerTooltip.List>
+											<LayerTooltip.Item
+												label="Predicted value"
+												value={formatCurrency(data?.predicted_price_usd ?? 0)}
+												color="var(--color-depreciation)"
+												valueAlign="right"
+											/>
+											<LayerTooltip.Item
+												label="Depreciation"
+												value={formatPercent(data?.depreciation_percent ?? 0, 1)}
+												valueAlign="right"
+											/>
+											<LayerTooltip.Item
+												label="Value retained"
+												value={formatPercent(data?.value_retention_percent ?? 0, 1)}
+												valueAlign="right"
+											/>
+											<LayerTooltip.Item
+												label="Car age"
+												value={typeof data?.car_age === 'number' ? `${data.car_age} years` : 'N/A'}
+												valueAlign="right"
+											/>
+											<LayerTooltip.Item
+												label="Projected odometer"
+												value={formatOdometer(data?.odometer_value)}
+												valueAlign="right"
+											/>
+											<LayerTooltip.Item
+												label="Annual loss"
+												value={formatLoss(data?.annual_loss_usd)}
+												valueAlign="right"
+											/>
+										</LayerTooltip.List>
+									{/snippet}
+								</LayerTooltip.Root>
+							{/snippet}
+						</LineChart>
 					</Chart.ChartContainer>
+
+					<p class="mt-4 text-sm leading-6 text-slate-400">
+						{depreciationCaption}
+					</p>
 				{:else}
 					<div class="rounded-[1.4rem] border border-dashed border-white/10 bg-black p-5 text-sm leading-6 text-slate-500">
 						Choose a recommended car to see its projected depreciation trend.
