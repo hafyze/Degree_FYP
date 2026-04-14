@@ -19,6 +19,7 @@
 	import suvIcon from '$lib/assets/car-icon/suv.png';
 	import vanIcon from '$lib/assets/car-icon/van.png';
 	import wagonIcon from '$lib/assets/car-icon/wagon.png';
+  import { Car } from 'lucide-react';
 
 	type UsageType = 'daily' | 'road-trips' | 'weekend';
 
@@ -58,6 +59,13 @@
 		rear: 'Rear-wheel drive (RWD)'
 	};
 
+	const fuelTypeLabels: Record<string, string> = {
+		diesel: 'Diesel',
+		gas: 'Gas',
+		'hybrid-petrol': 'Hybrid petrol',
+		petrol: 'Petrol'
+	};
+
 	const fallbackDrivetrains = ['all', 'front', 'rear'];
 
 	const bodyTypeIconMap: Record<string, string> = {
@@ -89,16 +97,19 @@
 	let preferredBrand = $state('');
 	let bodyType = $state('');
 	let drivetrain = $state('');
+	let fuelType = $state('');
 	let usageType = $state<UsageType>('daily');
 
 	let brands = $state<string[]>([]);
 	let bodyTypes = $state<string[]>([]);
 	let drivetrains = $state<string[]>([]);
+	let fuelTypes = $state<string[]>([]);
 	let recommendations = $state<Recommendation[]>([]);
 	let depreciationData = $state<DepreciationPoint[]>([]);
 	let isLoadingBrands = $state(true);
 	let isLoadingBodyTypes = $state(false);
 	let isLoadingDrivetrains = $state(true);
+	let isLoadingFuelTypes = $state(true);
 	let isLoadingBudgetRange = $state(true);
 	let isSubmitting = $state(false);
 	let isLoadingDepreciation = $state(false);
@@ -107,9 +118,11 @@
 	let brandOpen = $state(false);
 	let bodyTypeOpen = $state(false);
 	let drivetrainOpen = $state(false);
+	let fuelTypeOpen = $state(false);
 	let brandTriggerRef = $state<HTMLButtonElement>(null!);
 	let bodyTypeTriggerRef = $state<HTMLButtonElement>(null!);
 	let drivetrainTriggerRef = $state<HTMLButtonElement>(null!);
+	let fuelTypeTriggerRef = $state<HTMLButtonElement>(null!);
 	let lastSubmittedFilters = $state<string | null>(null);
 	let selectedRecommendationKey = $state('');
 
@@ -131,6 +144,12 @@
 			label: drivetrainLabels[item] ?? item
 		}))
 	);
+	const fuelOptions = $derived(
+		fuelTypes.map((item) => ({
+			value: item,
+			label: fuelTypeLabels[item] ?? item
+		}))
+	);
 	const selectedBrandLabel = $derived(
 		brandOptions.find((option) => option.value === preferredBrand)?.label
 	);
@@ -139,6 +158,7 @@
 	const selectedDrivetrainLabel = $derived(
 		drivetrainOptions.find((option) => option.value === drivetrain)?.label
 	);
+	const selectedFuelLabel = $derived(fuelOptions.find((option) => option.value === fuelType)?.label);
 
 	const budgetTicks = $derived(
 		Array.from({ length: 6 }, (_, index) => {
@@ -158,6 +178,7 @@
 			preferredBrand,
 			bodyType,
 			drivetrain,
+			fuelType,
 			usageType
 		})
 	);
@@ -280,6 +301,21 @@
 		}
 	}
 
+	async function loadFuelTypes() {
+		isLoadingFuelTypes = true;
+
+		try {
+			const response = await fetch('/api/fuel-types');
+			if (!response.ok) throw new Error('Unable to load fuel types.');
+			const data = await response.json();
+			fuelTypes = data.fuelTypes ?? ['diesel', 'gas', 'hybrid-petrol', 'petrol'];
+		} catch {
+			fuelTypes = ['diesel', 'gas', 'hybrid-petrol', 'petrol'];
+		} finally {
+			isLoadingFuelTypes = false;
+		}
+	}
+
 	async function loadBudgetRange() {
 		isLoadingBudgetRange = true;
 		requestError = '';
@@ -338,6 +374,7 @@
 					brand: preferredBrand,
 					bodyType,
 					drivetrain,
+					fuelType,
 					usageType
 				})
 			});
@@ -380,6 +417,13 @@
 		drivetrainOpen = false;
 		await tick();
 		drivetrainTriggerRef?.focus();
+	}
+
+	async function selectFuelType(nextFuelType: string) {
+		fuelType = nextFuelType;
+		fuelTypeOpen = false;
+		await tick();
+		fuelTypeTriggerRef?.focus();
 	}
 
 	async function loadDepreciationForecast(car: Recommendation) {
@@ -442,6 +486,7 @@
 		await loadBrands();
 		await loadBodyTypes('');
 		await loadDrivetrains();
+		await loadFuelTypes();
 	});
 
 	$effect(() => {
@@ -521,7 +566,7 @@
 								type="number"
 								min="0"
 								max="100"
-								placeholder="e.g. 2"
+								placeholder="2"
 								class="w-full rounded-[1.2rem] border border-white/10 bg-black px-4 py-2.5 text-white placeholder:text-slate-600 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-700"
 							/>
 						</label>
@@ -533,7 +578,7 @@
 								type="number"
 								min="0"
 								max="100"
-								placeholder="e.g. 10"
+								placeholder="10"
 								class="w-full rounded-[1.2rem] border border-white/10 bg-black px-4 py-2.5 text-white placeholder:text-slate-600 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-700"
 							/>
 						</label>
@@ -638,7 +683,8 @@
 						</div>
 					</div>
 
-					<div class="space-y-2">
+					<div class="grid gap-5 sm:grid-cols-2">
+						<div class="space-y-2">
 						<span class="text-sm font-semibold text-slate-200">Drivetrain</span>
 						<Popover.Root bind:open={drivetrainOpen}>
 							<Popover.Trigger bind:ref={drivetrainTriggerRef}>
@@ -680,20 +726,65 @@
 						{#if isLoadingDrivetrains}
 							<p class="text-sm text-slate-500">Loading drivetrains...</p>
 						{/if}
+						</div>
+
+						<div class="space-y-2">
+						<span class="text-sm font-semibold text-slate-200">Fuel type</span>
+						<Popover.Root bind:open={fuelTypeOpen}>
+							<Popover.Trigger bind:ref={fuelTypeTriggerRef}>
+								{#snippet child({ props })}
+									<Button
+										{...props}
+										variant="outline"
+										class="h-11 w-full justify-between rounded-[1.2rem] !border-white/10 !bg-black px-4 !text-white hover:!bg-neutral-900 focus-visible:!ring-0 focus-visible:!outline-none"
+										role="combobox"
+										aria-expanded={fuelTypeOpen}
+										disabled={isLoadingFuelTypes}
+									>
+										{selectedFuelLabel || 'Any fuel type'}
+										<span class="text-xs text-slate-500">v</span>
+									</Button>
+								{/snippet}
+							</Popover.Trigger>
+							<Popover.Content class="combobox-popover w-[var(--bits-popover-anchor-width)] !border-white/10 !bg-neutral-950 p-0 !text-white !ring-0">
+								<Command.Root>
+									<Command.Input placeholder="Search fuel type..." class="!bg-transparent !text-white placeholder:!text-slate-500 focus-visible:!ring-0 focus-visible:!outline-none" />
+									<Command.List class="bg-neutral-950">
+										<Command.Empty>No fuel type found.</Command.Empty>
+										<Command.Group value="fuel-types">
+											<Command.Item value="" class="text-slate-200 data-selected:!bg-neutral-900 data-selected:!text-white" onSelect={() => void selectFuelType('')}>
+												<span class={cn('mr-2 text-xs', fuelType ? 'text-transparent' : 'text-white')}>✓</span>
+												Any fuel type
+											</Command.Item>
+											{#each fuelOptions as option (option.value)}
+												<Command.Item value={option.value} class="text-slate-200 data-selected:!bg-neutral-900 data-selected:!text-white" onSelect={() => void selectFuelType(option.value)}>
+													<span class={cn('mr-2 text-xs', fuelType !== option.value && 'text-transparent')}>✓</span>
+													{option.label}
+												</Command.Item>
+											{/each}
+										</Command.Group>
+									</Command.List>
+								</Command.Root>
+							</Popover.Content>
+						</Popover.Root>
+						{#if isLoadingFuelTypes}
+							<p class="text-sm text-slate-500">Loading fuel types...</p>
+						{/if}
+						</div>
 					</div>
 
-					<div class="space-y-2.5">
+					<div class="space-y-3">
 						<div>
 							<p class="text-sm font-semibold text-slate-200">Usage type</p>
 						</div>
 
-						<div class="grid gap-3">
+						<div class="grid gap-3 sm:grid-cols-3">
 							{#each usageOptions as option}
 								<button
 									type="button"
 									class={`w-full rounded-[1.3rem] border px-4 py-3 text-left transition ${
 										usageType === option.value
-											? 'border-white/30 bg-white/5'
+											? 'border-white/30 bg-white/5 shadow-[0_0_0_1px_rgba(255,255,255,0.05)]'
 											: 'border-white/10 bg-black hover:border-white/20'
 									}`}
 									onclick={() => (usageType = option.value)}

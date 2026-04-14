@@ -23,6 +23,7 @@ export async function POST({ request }) {
 	const brand = typeof payload.brand === 'string' ? payload.brand.trim() : '';
 	const bodyType = typeof payload.bodyType === 'string' ? payload.bodyType.trim() : '';
 	const drivetrain = typeof payload.drivetrain === 'string' ? payload.drivetrain.trim() : '';
+	const fuelType = typeof payload.fuelType === 'string' ? payload.fuelType.trim() : '';
 	const usageType = typeof payload.usageType === 'string' ? payload.usageType.trim() : '';
 
 	const recommendations = await getRecommendations({
@@ -33,6 +34,7 @@ export async function POST({ request }) {
 		brand: brand || undefined,
 		bodyType: bodyType || undefined,
 		drivetrain: drivetrain || undefined,
+		fuelType: fuelType || undefined,
 		usageType: usageType || undefined
 	});
 
@@ -46,6 +48,7 @@ export async function POST({ request }) {
 			brand: brand || undefined,
 			bodyType: bodyType || undefined,
 			drivetrain: drivetrain || undefined,
+			fuelType: fuelType || undefined,
 			usageType: usageType || undefined
 		},
 		count: recommendations.length,

@@ -137,6 +137,11 @@ export async function getDrivetrains() {
 	return sortText(new Set(cars.map((car) => car.drivetrain).filter(Boolean)));
 }
 
+export async function getFuelTypes() {
+	const cars = await loadCars();
+	return sortText(new Set(cars.map((car) => car.engine_fuel).filter(Boolean)));
+}
+
 export async function getRecommendations(filters: {
 	budgetMin?: number;
 	budgetMax?: number;
@@ -145,6 +150,7 @@ export async function getRecommendations(filters: {
 	brand?: string;
 	bodyType?: string;
 	drivetrain?: string;
+	fuelType?: string;
 	usageType?: string;
 }) {
 	const cars = await loadCars();
@@ -197,6 +203,7 @@ export async function getRecommendations(filters: {
 		.filter((car) => (filters.brand ? car.manufacturer_name.toLowerCase() === filters.brand.toLowerCase() : true))
 		.filter((car) => (filters.bodyType ? car.body_type.toLowerCase() === filters.bodyType.toLowerCase() : true))
 		.filter((car) => (filters.drivetrain ? car.drivetrain.toLowerCase() === filters.drivetrain.toLowerCase() : true))
+		.filter((car) => (filters.fuelType ? car.engine_fuel.toLowerCase() === filters.fuelType.toLowerCase() : true))
 		.filter((car) => (typeof filters.budgetMin === 'number' ? car.price_usd >= filters.budgetMin : true))
 		.filter((car) => (typeof filters.budgetMax === 'number' ? car.price_usd <= filters.budgetMax : true))
 		.filter((car) => {
