@@ -624,7 +624,7 @@
 							max={priceRangeMax}
 							step={100}
 							disabled={isLoadingBudgetRange}
-							class="py-3"
+							class="py-1"
 						/>
 
 						<div class="flex justify-between text-xs text-slate-500">
@@ -660,7 +660,7 @@
 							max={ageRangeMax}
 							step={1}
 							disabled={isLoadingAgeRange}
-							class="py-3"
+							class="py-1"
 						/>
 
 						<div class="flex justify-between text-xs text-slate-500">
