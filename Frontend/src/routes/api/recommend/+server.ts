@@ -25,21 +25,32 @@ export async function POST({ request }) {
 	const drivetrain = typeof payload.drivetrain === 'string' ? payload.drivetrain.trim() : '';
 	const fuelType = typeof payload.fuelType === 'string' ? payload.fuelType.trim() : '';
 	const usageType = typeof payload.usageType === 'string' ? payload.usageType.trim() : '';
+	const sortBy = typeof payload.sortBy === 'string' ? payload.sortBy.trim() : '';
+	const page = toNumber(payload.page) ?? 1;
+	const pageSize = toNumber(payload.pageSize) ?? 6;
 
-	const recommendations = await getRecommendations({
-		budgetMin,
-		budgetMax,
-		ageMin,
-		ageMax,
-		brand: brand || undefined,
-		bodyType: bodyType || undefined,
-		drivetrain: drivetrain || undefined,
-		fuelType: fuelType || undefined,
-		usageType: usageType || undefined
-	});
+	const result = await getRecommendations(
+		{
+			budgetMin,
+			budgetMax,
+			ageMin,
+			ageMax,
+			brand: brand || undefined,
+			bodyType: bodyType || undefined,
+			drivetrain: drivetrain || undefined,
+			fuelType: fuelType || undefined,
+			usageType: usageType || undefined,
+			sortBy: sortBy || undefined
+		},
+		{
+			page,
+			pageSize
+		}
+	);
 
 	return json({
 		usageType,
+		sortBy,
 		appliedFilters: {
 			budgetMin,
 			budgetMax,
@@ -49,9 +60,13 @@ export async function POST({ request }) {
 			bodyType: bodyType || undefined,
 			drivetrain: drivetrain || undefined,
 			fuelType: fuelType || undefined,
-			usageType: usageType || undefined
+			usageType: usageType || undefined,
+			sortBy: sortBy || undefined
 		},
-		count: recommendations.length,
-		recommendations
+		count: result.recommendations.length,
+		totalCount: result.totalCount,
+		page: result.page,
+		pageSize: result.pageSize,
+		recommendations: result.recommendations
 	});
 }

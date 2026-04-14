@@ -14,6 +14,7 @@ export type CarRecord = {
 };
 
 type UsageType = 'daily' | 'road-trips' | 'weekend';
+type SortOption = 'recommended' | 'price-asc' | 'price-desc' | 'year-asc' | 'year-desc';
 
 let cachedCars: CarRecord[] | null = null;
 
@@ -132,6 +133,35 @@ export async function getPriceBounds() {
 	};
 }
 
+export async function getAgeBounds() {
+	const cars = await loadCars();
+	const currentYear = new Date().getFullYear();
+
+	if (cars.length === 0) {
+		return {
+			min: 0,
+			max: 30
+		};
+	}
+
+	const ages = cars
+		.map((car) => Number(car.year_produced))
+		.filter((year) => !Number.isNaN(year))
+		.map((year) => Math.max(0, currentYear - year));
+
+	if (ages.length === 0) {
+		return {
+			min: 0,
+			max: 30
+		};
+	}
+
+	return {
+		min: 0,
+		max: Math.max(...ages)
+	};
+}
+
 export async function getDrivetrains() {
 	const cars = await loadCars();
 	return sortText(new Set(cars.map((car) => car.drivetrain).filter(Boolean)));
@@ -142,7 +172,8 @@ export async function getFuelTypes() {
 	return sortText(new Set(cars.map((car) => car.engine_fuel).filter(Boolean)));
 }
 
-export async function getRecommendations(filters: {
+export async function getRecommendations(
+	filters: {
 	budgetMin?: number;
 	budgetMax?: number;
 	ageMin?: number;
@@ -152,9 +183,17 @@ export async function getRecommendations(filters: {
 	drivetrain?: string;
 	fuelType?: string;
 	usageType?: string;
-}) {
+	sortBy?: string;
+	},
+	options?: {
+		page?: number;
+		pageSize?: number;
+	}
+) {
 	const cars = await loadCars();
 	const currentYear = new Date().getFullYear();
+	const page = Math.max(1, options?.page ?? 1);
+	const pageSize = Math.max(1, options?.pageSize ?? 6);
 
 	function getUsageScore(car: CarRecord) {
 		const usageType = filters.usageType as UsageType | undefined;
@@ -199,6 +238,41 @@ export async function getRecommendations(filters: {
 		return score;
 	}
 
+	function compareCars(left: CarRecord, right: CarRecord) {
+		const sortBy = (filters.sortBy as SortOption | undefined) ?? 'recommended';
+		const leftYear = Number(left.year_produced);
+		const rightYear = Number(right.year_produced);
+		const safeLeftYear = Number.isNaN(leftYear) ? 0 : leftYear;
+		const safeRightYear = Number.isNaN(rightYear) ? 0 : rightYear;
+
+		if (sortBy === 'price-asc') {
+			return left.price_usd - right.price_usd || safeRightYear - safeLeftYear;
+		}
+
+		if (sortBy === 'price-desc') {
+			return right.price_usd - left.price_usd || safeRightYear - safeLeftYear;
+		}
+
+		if (sortBy === 'year-asc') {
+			return safeLeftYear - safeRightYear || left.price_usd - right.price_usd;
+		}
+
+		if (sortBy === 'year-desc') {
+			return safeRightYear - safeLeftYear || left.price_usd - right.price_usd;
+		}
+
+		const scoreDifference = getUsageScore(right) - getUsageScore(left);
+		if (scoreDifference !== 0) {
+			return scoreDifference;
+		}
+
+		if (safeRightYear !== safeLeftYear) {
+			return safeRightYear - safeLeftYear;
+		}
+
+		return left.price_usd - right.price_usd;
+	}
+
 	const filteredCars = cars
 		.filter((car) => (filters.brand ? car.manufacturer_name.toLowerCase() === filters.brand.toLowerCase() : true))
 		.filter((car) => (filters.bodyType ? car.body_type.toLowerCase() === filters.bodyType.toLowerCase() : true))
@@ -218,21 +292,16 @@ export async function getRecommendations(filters: {
 			const age = Number.isNaN(year) ? Number.NaN : Math.max(0, currentYear - year);
 			return !Number.isNaN(age) && age <= filters.ageMax;
 		})
-		.sort((left, right) => {
-			const scoreDifference = getUsageScore(right) - getUsageScore(left);
-			if (scoreDifference !== 0) {
-				return scoreDifference;
-			}
+		.sort(compareCars);
 
-			const leftYear = Number(left.year_produced);
-			const rightYear = Number(right.year_produced);
-			if (!Number.isNaN(leftYear) && !Number.isNaN(rightYear) && rightYear !== leftYear) {
-				return rightYear - leftYear;
-			}
+	const totalCount = filteredCars.length;
+	const startIndex = (page - 1) * pageSize;
+	const recommendations = filteredCars.slice(startIndex, startIndex + pageSize);
 
-			return left.price_usd - right.price_usd;
-		})
-		.slice(0, 12);
-
-	return filteredCars;
+	return {
+		recommendations,
+		totalCount,
+		page,
+		pageSize
+	};
 }
