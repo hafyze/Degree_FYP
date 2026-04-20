@@ -501,7 +501,7 @@
 				Fyze's Smart Car Recommendation System
 			</p>
 			<h1 class="text-3xl font-black tracking-[-0.04em] text-white sm:text-4xl">
-				Vehicle Preference Recommendation
+				Vehicle Recommendation
 			</h1>
 		</div>
 
