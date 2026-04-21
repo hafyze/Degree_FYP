@@ -53,7 +53,7 @@
 	});
 </script>
 
-<aside class="rounded-[2rem] border border-white/10 bg-neutral-950 p-5 sm:p-6">
+<aside class="rounded-[1.5rem] border border-white/10 bg-neutral-950 p-4 sm:rounded-[2rem] sm:p-6">
 	<div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
 		<div>
 			<p class="text-sm font-semibold tracking-[0.18em] text-slate-400 uppercase">Recommendations</p>
@@ -64,11 +64,11 @@
 				{resultsStale ? 'Filters changed' : `${totalRecommendations} found`}
 			</div>
 		</div>
-		<label class="space-y-2">
+		<label class="space-y-2 sm:ml-auto">
 			<span class="text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">Sort by</span>
 			<select
 				value={recommendationSort}
-				class="h-10 min-w-52 rounded-full border border-white/10 bg-black px-4 text-sm text-white focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-700"
+				class="h-10 w-full rounded-full border border-white/10 bg-black px-4 text-sm text-white focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-700 sm:min-w-52"
 				onchange={(event) =>
 					dispatch('sortChange', (event.currentTarget as HTMLSelectElement).value as RecommendationSort)}
 			>
@@ -80,7 +80,7 @@
 	</div>
 
 	<ScrollArea.Root class="mt-4 lg:h-124" orientation="vertical" scrollbarYClasses="w-2.5">
-		<div class="space-y-3 pr-3">
+		<div class="space-y-3 lg:pr-3">
 			{#if resultsStale}
 				<div class="rounded-[1.4rem] border border-amber-500/20 bg-amber-500/10 p-5 text-sm leading-6 text-amber-100">
 					The current inputs are different from the last submitted search. Click "Get recommendations" again to refresh the results for this budget range.
@@ -89,7 +89,7 @@
 				{#each recommendations as car}
 					<button
 						type="button"
-						class={`w-full rounded-[1.3rem] border bg-black p-3.5 text-left transition ${
+						class={`w-full rounded-[1.1rem] border bg-black p-3 text-left transition sm:rounded-[1.3rem] sm:p-3.5 ${
 							`${car.manufacturer_name}-${car.model_name}-${car.year_produced}-${car.price_usd}` ===
 							selectedRecommendationKey
 								? 'border-white/30 bg-white/5'
@@ -136,7 +136,7 @@
 		<div class="mt-4 border-t border-white/10 pt-4">
 			<Pagination.Root count={totalRecommendations} perPage={recommendationsPerPage} bind:page={paginationPage} siblingCount={1}>
 				{#snippet child({ pages })}
-					<Pagination.Content>
+					<Pagination.Content class="flex-wrap justify-center gap-1.5">
 						<Pagination.Item>
 							<Pagination.PrevButton
 								class="border-white/10 bg-black text-slate-300 hover:bg-neutral-900 hover:text-white disabled:opacity-40"

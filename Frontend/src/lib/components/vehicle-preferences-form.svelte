@@ -129,20 +129,20 @@
 	}
 </script>
 
-<section class="rounded-[2rem] border border-white/10 bg-neutral-950 p-5 sm:p-6">
+<section class="rounded-[1.5rem] border border-white/10 bg-neutral-950 p-4 sm:rounded-[2rem] sm:p-6">
 	<form
-		class="space-y-5"
+		class="space-y-4 sm:space-y-5"
 		onsubmit={(event) => {
 			event.preventDefault();
 			dispatch('submit');
 		}}
 	>
 		<div class="space-y-3">
-			<div class="flex flex-wrap items-start justify-between gap-3">
+			<div class="flex flex-col items-start justify-between gap-2 sm:flex-row sm:gap-3">
 				<div>
 					<span class="text-sm font-semibold text-slate-200">Budget range (USD)</span>
 				</div>
-				<div class="flex flex-wrap gap-2 text-sm">
+				<div class="grid w-full grid-cols-2 gap-2 text-xs sm:w-auto sm:text-sm">
 					<div class="rounded-full border border-white/10 bg-black px-3 py-1.5 text-slate-300">
 						Min: <span class="font-semibold text-white">{formatCurrency(budgetRange[0])}</span>
 					</div>
@@ -175,11 +175,11 @@
 		</div>
 
 		<div class="space-y-3">
-			<div class="flex flex-wrap items-start justify-between gap-3">
+			<div class="flex flex-col items-start justify-between gap-2 sm:flex-row sm:gap-3">
 				<div>
 					<span class="text-sm font-semibold text-slate-200">Car age range</span>
 				</div>
-				<div class="flex flex-wrap gap-2 text-sm">
+				<div class="grid w-full grid-cols-2 gap-2 text-xs sm:w-auto sm:text-sm">
 					<div class="rounded-full border border-white/10 bg-black px-3 py-1.5 text-slate-300">
 						Min: <span class="font-semibold text-white">{ageRange[0]} years</span>
 					</div>
@@ -230,7 +230,7 @@
 							</Button>
 						{/snippet}
 					</Popover.Trigger>
-					<Popover.Content class="combobox-popover w-(--bits-popover-anchor-width) border-white/10! bg-neutral-950! p-0 text-white! ring-0!">
+					<Popover.Content class="combobox-popover max-w-[calc(100vw-1.5rem)] w-(--bits-popover-anchor-width) border-white/10! bg-neutral-950! p-0 text-white! ring-0!">
 						<Command.Root>
 							<Command.Input placeholder="Search brand..." class="bg-transparent! text-white! placeholder:text-slate-500! focus-visible:ring-0! focus-visible:outline-none!" />
 							<Command.List class="bg-neutral-950">
@@ -279,7 +279,7 @@
 							</Button>
 						{/snippet}
 					</Popover.Trigger>
-					<Popover.Content class="combobox-popover w-(--bits-popover-anchor-width) border-white/10! bg-neutral-950! p-0 text-white! ring-0!">
+					<Popover.Content class="combobox-popover max-w-[calc(100vw-1.5rem)] w-(--bits-popover-anchor-width) border-white/10! bg-neutral-950! p-0 text-white! ring-0!">
 						<Command.Root>
 							<Command.Input placeholder="Search body type..." class="bg-transparent! text-white! placeholder:text-slate-500! focus-visible:ring-0! focus-visible:outline-none!" />
 							<Command.List class="bg-neutral-950">
@@ -329,7 +329,7 @@
 							</Button>
 						{/snippet}
 					</Popover.Trigger>
-					<Popover.Content class="combobox-popover w-(--bits-popover-anchor-width) border-white/10! bg-neutral-950! p-0 text-white! ring-0!">
+					<Popover.Content class="combobox-popover max-w-[calc(100vw-1.5rem)] w-(--bits-popover-anchor-width) border-white/10! bg-neutral-950! p-0 text-white! ring-0!">
 						<Command.Root>
 							<Command.Input placeholder="Search drivetrain..." class="bg-transparent! text-white! placeholder:text-slate-500! focus-visible:ring-0! focus-visible:outline-none!" />
 							<Command.List class="bg-neutral-950">
@@ -373,7 +373,7 @@
 							</Button>
 						{/snippet}
 					</Popover.Trigger>
-					<Popover.Content class="combobox-popover w-(--bits-popover-anchor-width) border-white/10! bg-neutral-950! p-0 text-white! ring-0!">
+					<Popover.Content class="combobox-popover max-w-[calc(100vw-1.5rem)] w-(--bits-popover-anchor-width) border-white/10! bg-neutral-950! p-0 text-white! ring-0!">
 						<Command.Root>
 							<Command.Input placeholder="Search fuel type..." class="bg-transparent! text-white! placeholder:text-slate-500! focus-visible:ring-0! focus-visible:outline-none!" />
 							<Command.List class="bg-neutral-950">
@@ -429,9 +429,9 @@
 			</p>
 		{/if}
 
-		<div class="flex items-center justify-between border-t border-white/10 pt-5">
+		<div class="flex flex-col gap-3 border-t border-white/10 pt-4 sm:flex-row sm:items-center sm:justify-between sm:pt-5">
 			<p class="text-sm text-slate-500">Dataset filter and recommendation system.</p>
-			<Button type="submit" size="lg" class="h-10 rounded-full bg-white px-5 text-sm font-semibold text-black hover:bg-slate-200" disabled={isSubmitting}>
+			<Button type="submit" size="lg" class="h-11 w-full rounded-full bg-white px-5 text-sm font-semibold text-black hover:bg-slate-200 sm:h-10 sm:w-auto" disabled={isSubmitting}>
 				{isSubmitting ? 'Loading...' : 'Get recommendations'}
 			</Button>
 		</div>

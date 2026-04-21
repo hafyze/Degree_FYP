@@ -209,7 +209,7 @@
 			return '';
 		}
 
-		return `Based on this model, the car is projected to retain ${Math.round(finalPoint.value_retention_percent)}% of its current value after 5 years.`;
+		return `The car is projected to retain ${Math.round(finalPoint.value_retention_percent)}% of its current value after 5 years.`;
 	});
 
 	async function loadBrands() {
@@ -495,17 +495,17 @@
 </svelte:head>
 
 <div class="min-h-screen bg-black text-slate-100">
-	<div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-		<div class="mb-6 space-y-2">
-			<p class="text-sm font-semibold tracking-[0.24em] text-slate-400 uppercase">
+	<div class="mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
+		<div class="mb-4 space-y-1.5 sm:mb-6 sm:space-y-2">
+			<p class="text-xs font-semibold tracking-[0.22em] text-slate-400 uppercase sm:text-sm sm:tracking-[0.24em]">
 				Fyze's Smart Car Recommendation System
 			</p>
-			<h1 class="text-3xl font-black tracking-[-0.04em] text-white sm:text-4xl">
+			<h1 class="text-2xl font-black tracking-[-0.04em] text-white sm:text-4xl">
 				Vehicle Recommendation
 			</h1>
 		</div>
 
-		<div class="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+		<div class="grid gap-4 sm:gap-6 lg:grid-cols-[1.05fr_0.95fr]">
 			<VehiclePreferencesForm
 				{budgetRange}
 				{priceRangeMax}
