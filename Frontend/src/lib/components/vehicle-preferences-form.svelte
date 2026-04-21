@@ -220,7 +220,7 @@
 							<Button
 								{...props}
 								variant="outline"
-								class="h-11 w-full justify-between rounded-[1.2rem] !border-white/10 !bg-black px-4 !text-white hover:!bg-neutral-900 focus-visible:!ring-0 focus-visible:!outline-none"
+								class="h-11 w-full justify-between rounded-[1.2rem] border-white/10! bg-black! px-4 text-white! hover:bg-neutral-900! focus-visible:ring-0! focus-visible:outline-none!"
 								role="combobox"
 								aria-expanded={brandOpen}
 								disabled={isLoadingBrands}

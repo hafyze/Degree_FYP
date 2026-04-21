@@ -12,6 +12,25 @@ export type Recommendation = {
 	engine_fuel: string;
 };
 
+export type CarImageView = {
+	src: string;
+	alt: string;
+	label: 'Front' | 'Rear' | 'Interior';
+};
+
+export type CarImageAttribution = {
+	sourceName: string;
+	sourceUrl: string;
+	photographer?: string;
+	licenseNote: string;
+};
+
+export type CarImageEntry = {
+	key: string;
+	images: CarImageView[];
+	attribution?: CarImageAttribution;
+};
+
 export type DepreciationPoint = {
 	year: string;
 	predicted_price_usd: number;

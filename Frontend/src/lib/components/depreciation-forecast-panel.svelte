@@ -1,16 +1,19 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
 	import * as Chart from '$lib/components/ui/chart';
+	import * as Carousel from '$lib/components/ui/carousel';
 	import {
 		LineChart,
 		Tooltip as LayerTooltip
 	} from 'layerchart';
 	import {
+		drivetrainLabels,
 		formatCurrency,
 		formatLoss,
 		formatOdometer,
 		formatPercent
 	} from '$lib/features/vehicle-recommendation/helpers';
+	import { getRecommendationImages } from '$lib/features/vehicle-recommendation/car-images';
 	import type {
 		DepreciationMetric,
 		DepreciationViewPoint,
@@ -65,6 +68,9 @@
 	const fiveYearPoint = $derived(
 		depreciationViewData[5] ?? depreciationViewData[depreciationViewData.length - 1] ?? null
 	);
+	const selectedRecommendationImages = $derived.by(() =>
+		selectedRecommendation ? getRecommendationImages(selectedRecommendation) : null
+	);
 </script>
 
 <section class="mt-6 rounded-[2rem] border border-white/10 bg-neutral-950 p-5 sm:p-6">
@@ -80,6 +86,80 @@
 			</div>
 		{/if}
 	</div>
+
+	{#if selectedRecommendation}
+		<div class="mt-4 grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
+			<div class="rounded-[1.4rem] border border-white/10 bg-black p-5">
+				<p class="text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">
+					Selected recommendation
+				</p>
+				<h3 class="mt-2 text-2xl font-black tracking-[-0.04em] text-white">
+					{selectedRecommendation.manufacturer_name} {selectedRecommendation.model_name}
+				</h3>
+				<p class="mt-2 text-sm leading-6 text-slate-400">
+					{selectedRecommendation.body_type} · {selectedRecommendation.year_produced || 'Year unknown'} · {selectedRecommendation.transmission || 'Transmission unknown'}
+				</p>
+
+				<div class="mt-5 grid gap-3 sm:grid-cols-2">
+					<div class="rounded-[1rem] border border-white/10 bg-neutral-950 px-4 py-3">
+						<p class="text-xs text-slate-500">Current price</p>
+						<p class="mt-1 text-base font-semibold text-white">
+							{formatCurrency(selectedRecommendation.price_usd)}
+						</p>
+					</div>
+					<div class="rounded-[1rem] border border-white/10 bg-neutral-950 px-4 py-3">
+						<p class="text-xs text-slate-500">Drivetrain</p>
+						<p class="mt-1 text-base font-semibold text-white">
+							{drivetrainLabels[selectedRecommendation.drivetrain ?? ''] ?? selectedRecommendation.drivetrain ?? 'Unknown'}
+						</p>
+					</div>
+					<div class="rounded-[1rem] border border-white/10 bg-neutral-950 px-4 py-3">
+						<p class="text-xs text-slate-500">Fuel</p>
+						<p class="mt-1 text-base font-semibold text-white">
+							{selectedRecommendation.engine_fuel || 'Unknown'}
+						</p>
+					</div>
+					<div class="rounded-[1rem] border border-white/10 bg-neutral-950 px-4 py-3">
+						<p class="text-xs text-slate-500">Odometer</p>
+						<p class="mt-1 text-base font-semibold text-white">
+							{formatOdometer(selectedRecommendation.odometer_value)}
+						</p>
+					</div>
+				</div>
+			</div>
+
+			<div class="rounded-[1.4rem] border border-white/10 bg-black p-3">
+				{#if selectedRecommendationImages}
+					<Carousel.Root opts={{ loop: true }} class="overflow-hidden rounded-[1.15rem]">
+						<Carousel.Content>
+							{#each selectedRecommendationImages.images as image}
+								<Carousel.Item>
+									<figure class="relative overflow-hidden rounded-[1.15rem] border border-white/10 bg-neutral-950">
+										<img
+											src={image.src}
+											alt={image.alt}
+											class="aspect-[16/10] w-full object-cover"
+											loading="lazy"
+										/>
+										<figcaption class="absolute inset-x-3 bottom-3 flex items-center justify-between gap-3 rounded-full border border-white/10 bg-black/70 px-4 py-2 text-xs font-semibold text-white backdrop-blur">
+											<span>{image.label}</span>
+											<span class="text-slate-300">{selectedRecommendation.manufacturer_name} {selectedRecommendation.model_name}</span>
+										</figcaption>
+									</figure>
+								</Carousel.Item>
+							{/each}
+						</Carousel.Content>
+						<Carousel.Previous class="start-3 top-1/2 -translate-y-1/2 border-white/15 bg-black/70 text-white hover:bg-black/90" />
+						<Carousel.Next class="end-3 top-1/2 -translate-y-1/2 border-white/15 bg-black/70 text-white hover:bg-black/90" />
+					</Carousel.Root>
+				{:else}
+					<div class="flex aspect-[16/10] flex-col items-center justify-center rounded-[1.15rem] border border-dashed border-white/10 bg-neutral-950 p-6 text-center">
+						<p class="text-sm font-semibold text-white">Images not available for this car yet.</p>
+					</div>
+				{/if}
+			</div>
+		</div>
+	{/if}
 
 	<div class="mt-4">
 		{#if selectedRecommendation && isLoadingDepreciation}
@@ -227,7 +307,7 @@
 				</p>
 			</div>
 
-			<Chart.ChartContainer config={chartConfig} class="h-[320px] w-full">
+			<Chart.ChartContainer config={chartConfig} class="h-80 w-full">
 				<LineChart
 					bind:context={chartContext}
 					data={depreciationViewData}

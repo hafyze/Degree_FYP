@@ -78,7 +78,7 @@
 		</label>
 	</div>
 
-	<ScrollArea.Root class="mt-4 lg:h-[31rem]" orientation="vertical" scrollbarYClasses="w-2.5">
+	<ScrollArea.Root class="mt-4 lg:h-124" orientation="vertical" scrollbarYClasses="w-2.5">
 		<div class="space-y-3 pr-3">
 			{#if resultsStale}
 				<div class="rounded-[1.4rem] border border-amber-500/20 bg-amber-500/10 p-5 text-sm leading-6 text-amber-100">
