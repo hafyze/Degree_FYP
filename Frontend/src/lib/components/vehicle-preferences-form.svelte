@@ -230,18 +230,18 @@
 							</Button>
 						{/snippet}
 					</Popover.Trigger>
-					<Popover.Content class="combobox-popover w-[var(--bits-popover-anchor-width)] !border-white/10 !bg-neutral-950 p-0 !text-white !ring-0">
+					<Popover.Content class="combobox-popover w-(--bits-popover-anchor-width) border-white/10! bg-neutral-950! p-0 text-white! ring-0!">
 						<Command.Root>
-							<Command.Input placeholder="Search brand..." class="!bg-transparent !text-white placeholder:!text-slate-500 focus-visible:!ring-0 focus-visible:!outline-none" />
+							<Command.Input placeholder="Search brand..." class="bg-transparent! text-white! placeholder:text-slate-500! focus-visible:ring-0! focus-visible:outline-none!" />
 							<Command.List class="bg-neutral-950">
 								<Command.Empty>No brand found.</Command.Empty>
 								<Command.Group value="brands">
-									<Command.Item value="" class="text-slate-200 data-selected:!bg-neutral-900 data-selected:!text-white" onSelect={() => void handleBrandChange('')}>
+									<Command.Item value="" class="text-slate-200 data-selected:bg-neutral-900! data-selected:text-white!" onSelect={() => void handleBrandChange('')}>
 										<span class={cn('mr-2 text-xs', preferredBrand ? 'text-transparent' : 'text-white')}>✓</span>
 										Any brand
 									</Command.Item>
 									{#each brandOptions as brand (brand.value)}
-										<Command.Item value={brand.value} class="text-slate-200 data-selected:!bg-neutral-900 data-selected:!text-white" onSelect={() => void handleBrandChange(brand.value)}>
+										<Command.Item value={brand.value} class="text-slate-200 data-selected:bg-neutral-900! data-selected:text-white!" onSelect={() => void handleBrandChange(brand.value)}>
 											<span class={cn('mr-2 text-xs', preferredBrand !== brand.value && 'text-transparent')}>✓</span>
 											{brand.label}
 										</Command.Item>
@@ -264,7 +264,7 @@
 							<Button
 								{...props}
 								variant="outline"
-								class="h-11 w-full justify-between rounded-[1.2rem] !border-white/10 !bg-black px-4 !text-white hover:!bg-neutral-900 focus-visible:!ring-0 focus-visible:!outline-none"
+								class="h-11 w-full justify-between rounded-[1.2rem] border-white/10! bg-black! px-4 text-white! hover:bg-neutral-900! focus-visible:ring-0! focus-visible:outline-none!"
 								role="combobox"
 								aria-expanded={bodyTypeOpen}
 								disabled={isLoadingBodyTypes}
@@ -279,19 +279,19 @@
 							</Button>
 						{/snippet}
 					</Popover.Trigger>
-					<Popover.Content class="combobox-popover w-[var(--bits-popover-anchor-width)] !border-white/10 !bg-neutral-950 p-0 !text-white !ring-0">
+					<Popover.Content class="combobox-popover w-(--bits-popover-anchor-width) border-white/10! bg-neutral-950! p-0 text-white! ring-0!">
 						<Command.Root>
-							<Command.Input placeholder="Search body type..." class="!bg-transparent !text-white placeholder:!text-slate-500 focus-visible:!ring-0 focus-visible:!outline-none" />
+							<Command.Input placeholder="Search body type..." class="bg-transparent! text-white! placeholder:text-slate-500! focus-visible:ring-0! focus-visible:outline-none!" />
 							<Command.List class="bg-neutral-950">
 								<Command.Empty>No body type found.</Command.Empty>
 								<Command.Group value="body-types">
-									<Command.Item value="" class="text-slate-200 data-selected:!bg-neutral-900 data-selected:!text-white" onSelect={() => void handleBodyTypeChange('')}>
+									<Command.Item value="" class="text-slate-200 data-selected:bg-neutral-900! data-selected:text-white!" onSelect={() => void handleBodyTypeChange('')}>
 										<span class={cn('mr-2 text-xs', bodyType ? 'text-transparent' : 'text-white')}>✓</span>
 										<span class="mr-3 inline-flex h-5 w-5 items-center justify-center rounded-full border border-white/10 text-[10px] text-slate-500">-</span>
 										Any body type
 									</Command.Item>
 									{#each bodyTypeOptions as option (option.value)}
-										<Command.Item value={option.value} class="text-slate-200 data-selected:!bg-neutral-900 data-selected:!text-white" onSelect={() => void handleBodyTypeChange(option.value)}>
+										<Command.Item value={option.value} class="text-slate-200 data-selected:bg-neutral-900! data-selected:text-white!" onSelect={() => void handleBodyTypeChange(option.value)}>
 											<span class={cn('mr-2 text-xs', bodyType !== option.value && 'text-transparent')}>✓</span>
 											{#if option.icon}
 												<img src={option.icon} alt={option.label} class="mr-3 h-7 w-7 object-contain opacity-90" />
@@ -319,7 +319,7 @@
 							<Button
 								{...props}
 								variant="outline"
-								class="h-11 w-full justify-between rounded-[1.2rem] !border-white/10 !bg-black px-4 !text-white hover:!bg-neutral-900 focus-visible:!ring-0 focus-visible:!outline-none"
+								class="h-11 w-full justify-between rounded-[1.2rem] border-white/10! bg-black! px-4 text-white! hover:bg-neutral-900! focus-visible:ring-0! focus-visible:outline-none!"
 								role="combobox"
 								aria-expanded={drivetrainOpen}
 								disabled={isLoadingDrivetrains}
@@ -329,18 +329,18 @@
 							</Button>
 						{/snippet}
 					</Popover.Trigger>
-					<Popover.Content class="combobox-popover w-[var(--bits-popover-anchor-width)] !border-white/10 !bg-neutral-950 p-0 !text-white !ring-0">
+					<Popover.Content class="combobox-popover w-(--bits-popover-anchor-width) border-white/10! bg-neutral-950! p-0 text-white! ring-0!">
 						<Command.Root>
-							<Command.Input placeholder="Search drivetrain..." class="!bg-transparent !text-white placeholder:!text-slate-500 focus-visible:!ring-0 focus-visible:!outline-none" />
+							<Command.Input placeholder="Search drivetrain..." class="bg-transparent! text-white! placeholder:text-slate-500! focus-visible:ring-0! focus-visible:outline-none!" />
 							<Command.List class="bg-neutral-950">
 								<Command.Empty>No drivetrain found.</Command.Empty>
 								<Command.Group value="drivetrains">
-									<Command.Item value="" class="text-slate-200 data-selected:!bg-neutral-900 data-selected:!text-white" onSelect={() => void handleDrivetrainChange('')}>
+									<Command.Item value="" class="text-slate-200 data-selected:bg-neutral-900! data-selected:text-white!" onSelect={() => void handleDrivetrainChange('')}>
 										<span class={cn('mr-2 text-xs', drivetrain ? 'text-transparent' : 'text-white')}>✓</span>
 										Any drivetrain
 									</Command.Item>
 									{#each drivetrainOptions as option (option.value)}
-										<Command.Item value={option.value} class="text-slate-200 data-selected:!bg-neutral-900 data-selected:!text-white" onSelect={() => void handleDrivetrainChange(option.value)}>
+										<Command.Item value={option.value} class="text-slate-200 data-selected:bg-neutral-900! data-selected:text-white!" onSelect={() => void handleDrivetrainChange(option.value)}>
 											<span class={cn('mr-2 text-xs', drivetrain !== option.value && 'text-transparent')}>✓</span>
 											{option.label}
 										</Command.Item>
@@ -363,7 +363,7 @@
 							<Button
 								{...props}
 								variant="outline"
-								class="h-11 w-full justify-between rounded-[1.2rem] !border-white/10 !bg-black px-4 !text-white hover:!bg-neutral-900 focus-visible:!ring-0 focus-visible:!outline-none"
+								class="h-11 w-full justify-between rounded-[1.2rem] border-white/10! bg-black! px-4 text-white! hover:bg-neutral-900! focus-visible:ring-0! focus-visible:outline-none!"
 								role="combobox"
 								aria-expanded={fuelTypeOpen}
 								disabled={isLoadingFuelTypes}
@@ -373,18 +373,18 @@
 							</Button>
 						{/snippet}
 					</Popover.Trigger>
-					<Popover.Content class="combobox-popover w-[var(--bits-popover-anchor-width)] !border-white/10 !bg-neutral-950 p-0 !text-white !ring-0">
+					<Popover.Content class="combobox-popover w-(--bits-popover-anchor-width) border-white/10! bg-neutral-950! p-0 text-white! ring-0!">
 						<Command.Root>
-							<Command.Input placeholder="Search fuel type..." class="!bg-transparent !text-white placeholder:!text-slate-500 focus-visible:!ring-0 focus-visible:!outline-none" />
+							<Command.Input placeholder="Search fuel type..." class="bg-transparent! text-white! placeholder:text-slate-500! focus-visible:ring-0! focus-visible:outline-none!" />
 							<Command.List class="bg-neutral-950">
 								<Command.Empty>No fuel type found.</Command.Empty>
 								<Command.Group value="fuel-types">
-									<Command.Item value="" class="text-slate-200 data-selected:!bg-neutral-900 data-selected:!text-white" onSelect={() => void handleFuelTypeChange('')}>
+									<Command.Item value="" class="text-slate-200 data-selected:bg-neutral-900! data-selected:text-white!" onSelect={() => void handleFuelTypeChange('')}>
 										<span class={cn('mr-2 text-xs', fuelType ? 'text-transparent' : 'text-white')}>✓</span>
 										Any fuel type
 									</Command.Item>
 									{#each fuelOptions as option (option.value)}
-										<Command.Item value={option.value} class="text-slate-200 data-selected:!bg-neutral-900 data-selected:!text-white" onSelect={() => void handleFuelTypeChange(option.value)}>
+										<Command.Item value={option.value} class="text-slate-200 data-selected:bg-neutral-900! data-selected:text-white!" onSelect={() => void handleFuelTypeChange(option.value)}>
 											<span class={cn('mr-2 text-xs', fuelType !== option.value && 'text-transparent')}>✓</span>
 											{option.label}
 										</Command.Item>

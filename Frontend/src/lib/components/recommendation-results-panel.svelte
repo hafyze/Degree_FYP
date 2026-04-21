@@ -39,7 +39,8 @@
 		selectRecommendation: string;
 	}>();
 
-	let paginationPage = $state(currentPage);
+	// svelte-ignore state_referenced_locally
+		let paginationPage = $state(currentPage);
 
 	$effect(() => {
 		paginationPage = currentPage;

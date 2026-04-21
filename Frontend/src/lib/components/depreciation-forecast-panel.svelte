@@ -138,7 +138,7 @@
 										<img
 											src={image.src}
 											alt={image.alt}
-											class="aspect-[16/10] w-full object-cover"
+											class="aspect-16/10 w-full object-cover"
 											loading="lazy"
 										/>
 										<figcaption class="absolute inset-x-3 bottom-3 flex items-center justify-between gap-3 rounded-full border border-white/10 bg-black/70 px-4 py-2 text-xs font-semibold text-white backdrop-blur">
@@ -149,11 +149,11 @@
 								</Carousel.Item>
 							{/each}
 						</Carousel.Content>
-						<Carousel.Previous class="start-3 top-1/2 -translate-y-1/2 border-white/15 bg-black/70 text-white hover:bg-black/90" />
-						<Carousel.Next class="end-3 top-1/2 -translate-y-1/2 border-white/15 bg-black/70 text-white hover:bg-black/90" />
+						<Carousel.Previous class="inset-s-3 top-1/2 -translate-y-1/2 border-white/15 bg-black/70 text-white hover:bg-black/90" />
+						<Carousel.Next class="inset-e-3 top-1/2 -translate-y-1/2 border-white/15 bg-black/70 text-white hover:bg-black/90" />
 					</Carousel.Root>
 				{:else}
-					<div class="flex aspect-[16/10] flex-col items-center justify-center rounded-[1.15rem] border border-dashed border-white/10 bg-neutral-950 p-6 text-center">
+					<div class="flex aspect-16/10 flex-col items-center justify-center rounded-[1.15rem] border border-dashed border-white/10 bg-neutral-950 p-6 text-center">
 						<p class="text-sm font-semibold text-white">Images not available for this car yet.</p>
 					</div>
 				{/if}
