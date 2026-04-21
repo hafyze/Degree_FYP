@@ -59,12 +59,6 @@
 	const activeDepreciationPoint = $derived.by(
 		() => hoveredDepreciationPoint ?? depreciationViewData[depreciationViewData.length - 1] ?? null
 	);
-	const currentCarAge = $derived(depreciationViewData[0]?.car_age ?? null);
-	const finalCarAge = $derived(
-		depreciationViewData.length > 0 ? depreciationViewData[depreciationViewData.length - 1]?.car_age ?? null : null
-	);
-	const oneYearPoint = $derived(depreciationViewData[1] ?? null);
-	const threeYearPoint = $derived(depreciationViewData[3] ?? null);
 	const fiveYearPoint = $derived(
 		depreciationViewData[5] ?? depreciationViewData[depreciationViewData.length - 1] ?? null
 	);
@@ -186,57 +180,8 @@
 				</div>
 			</div>
 
-			<div class="mb-4 grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
-				<div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-					<div class="rounded-[1.2rem] border border-white/10 bg-black px-4 py-3">
-						<p class="text-xs font-semibold tracking-[0.16em] text-slate-500 uppercase">Current price</p>
-						<p class="mt-2 text-lg font-bold text-white">{formatCurrency(selectedRecommendation.price_usd)}</p>
-					</div>
-					<div class="rounded-[1.2rem] border border-white/10 bg-black px-4 py-3">
-						<p class="text-xs font-semibold tracking-[0.16em] text-slate-500 uppercase">1-year loss</p>
-						<p class="mt-2 text-lg font-bold text-white">
-							{formatLoss(
-								typeof oneYearPoint?.predicted_price_usd === 'number'
-									? selectedRecommendation.price_usd - oneYearPoint.predicted_price_usd
-									: null
-							)}
-						</p>
-					</div>
-					<div class="rounded-[1.2rem] border border-white/10 bg-black px-4 py-3">
-						<p class="text-xs font-semibold tracking-[0.16em] text-slate-500 uppercase">3-year loss</p>
-						<p class="mt-2 text-lg font-bold text-white">
-							{formatLoss(
-								typeof threeYearPoint?.predicted_price_usd === 'number'
-									? selectedRecommendation.price_usd - threeYearPoint.predicted_price_usd
-									: null
-							)}
-						</p>
-					</div>
-					<div class="rounded-[1.2rem] border border-white/10 bg-black px-4 py-3">
-						<p class="text-xs font-semibold tracking-[0.16em] text-slate-500 uppercase">5-year loss</p>
-						<p class="mt-2 text-lg font-bold text-white">
-							{formatLoss(
-								typeof fiveYearPoint?.predicted_price_usd === 'number'
-									? selectedRecommendation.price_usd - fiveYearPoint.predicted_price_usd
-									: null
-							)}
-						</p>
-					</div>
-					<div class="rounded-[1.2rem] border border-white/10 bg-black px-4 py-3">
-						<p class="text-xs font-semibold tracking-[0.16em] text-slate-500 uppercase">Current age</p>
-						<p class="mt-2 text-lg font-bold text-white">
-							{currentCarAge !== null ? `${currentCarAge} years` : 'N/A'}
-						</p>
-					</div>
-					<div class="rounded-[1.2rem] border border-white/10 bg-black px-4 py-3">
-						<p class="text-xs font-semibold tracking-[0.16em] text-slate-500 uppercase">Final projected age</p>
-						<p class="mt-2 text-lg font-bold text-white">
-							{finalCarAge !== null ? `${finalCarAge} years` : 'N/A'}
-						</p>
-					</div>
-				</div>
-
-				<div class="rounded-[1.4rem] border border-white/10 bg-black px-4 py-4">
+			<div class="mb-4 flex justify-center">
+				<div class="w-full max-w-3xl rounded-[1.4rem] border border-white/10 bg-black px-4 py-4">
 					<div class="flex items-start justify-between gap-3">
 						<div>
 							<p class="text-xs font-semibold tracking-[0.16em] text-slate-500 uppercase">Selected year</p>

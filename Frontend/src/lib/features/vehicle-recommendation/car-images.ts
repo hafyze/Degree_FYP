@@ -37,6 +37,15 @@ const carImageManifest: Record<string, CarImageEntry> = {
 			licenseNote: 'Replace with manually curated free-to-use photos before production.'
 		}
 	},
+	'bmw-530-2019': {
+		key: 'bmw-530-2019',
+		images: createImageSet('bmw-530-2019', '2019 BMW 530'),
+		attribution: {
+			sourceName: 'Manually curated local image set',
+			sourceUrl: '/car-images/bmw-530-2019/',
+			licenseNote: 'Verify the source license before production use.'
+		}
+	},
 	'toyota-camry-2007': {
 		key: 'toyota-camry-2007',
 		images: createImageSet('toyota-camry-2007', '2007 Toyota Camry'),
