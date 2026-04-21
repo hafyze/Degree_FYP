@@ -18,17 +18,17 @@ export const usageOptions: UsageOption[] = [
 	{
 		value: 'daily',
 		label: 'Daily commute',
-		description: 'For regular city driving and everyday errands.'
+		description: 'For everyday driving.'
 	},
 	{
 		value: 'road-trips',
 		label: 'Road trips',
-		description: 'A clearer replacement for long journey.'
+		description: 'Best for long journey.'
 	},
 	{
 		value: 'weekend',
 		label: 'Weekend use',
-		description: 'For occasional drives and leisure use.'
+		description: 'Occasional drives and leisure.'
 	}
 ];
 
