@@ -487,7 +487,7 @@
 </script>
 
 <svelte:head>
-	<title>Preference Input</title>
+	<title>Car Recommender</title>
 	<meta
 		name="description"
 		content="Vehicle preference input page with recommendations and depreciation chart."
