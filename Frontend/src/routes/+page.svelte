@@ -3,6 +3,7 @@
 	import DepreciationForecastPanel from '$lib/components/depreciation-forecast-panel.svelte';
 	import RecommendationResultsPanel from '$lib/components/recommendation-results-panel.svelte';
 	import VehiclePreferencesForm from '$lib/components/vehicle-preferences-form.svelte';
+	import * as Tabs from '$lib/components/ui/tabs';
 	import {
 		bodyTypeIconMap,
 		drivetrainLabels,
@@ -54,6 +55,7 @@
 	let lastObservedPage = $state(1);
 	let totalRecommendations = $state(0);
 	let lastObservedSort = $state<RecommendationSort>('recommended');
+	let mobileTab = $state('filters');
 
 	const recommendationsPerPage = 6;
 
@@ -390,6 +392,14 @@
 		currentPage = 1;
 		lastObservedPage = 1;
 		await loadRecommendations(1);
+		if (!requestError) {
+			mobileTab = 'results';
+		}
+	}
+
+	function selectRecommendation(nextRecommendationKey: string) {
+		selectedRecommendationKey = nextRecommendationKey;
+		mobileTab = 'details';
 	}
 
 	function handleBrandChange(nextBrand: string) {
@@ -505,64 +515,155 @@
 			</h1>
 		</div>
 
-		<div class="grid gap-4 sm:gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-			<VehiclePreferencesForm
-				{budgetRange}
-				{priceRangeMax}
-				{budgetTicks}
-				{isLoadingBudgetRange}
-				{ageRange}
-				{ageRangeMax}
-				{ageTicks}
-				{isLoadingAgeRange}
-				{preferredBrand}
-				{bodyType}
-				{drivetrain}
-				{fuelType}
-				{usageType}
-				{brandOptions}
-				{bodyTypeOptions}
-				{drivetrainOptions}
-				{fuelOptions}
-				{isLoadingBrands}
-				{isLoadingBodyTypes}
-				{isLoadingDrivetrains}
-				{isLoadingFuelTypes}
-				{requestError}
-				{isSubmitting}
-				on:submit={() => void submitPreferences()}
-				on:budgetRangeChange={(event) => (budgetRange = event.detail)}
-				on:ageRangeChange={(event) => (ageRange = event.detail)}
-				on:brandChange={(event) => handleBrandChange(event.detail)}
-				on:bodyTypeChange={(event) => handleBodyTypeChange(event.detail)}
-				on:drivetrainChange={(event) => handleDrivetrainChange(event.detail)}
-				on:fuelTypeChange={(event) => handleFuelTypeChange(event.detail)}
-				on:usageTypeChange={(event) => (usageType = event.detail)}
-			/>
+		<div class="lg:hidden">
+			<Tabs.Root bind:value={mobileTab} class="gap-4">
+				<Tabs.List class="grid h-auto w-full grid-cols-3 rounded-full border border-white/10 bg-neutral-950 p-1 text-slate-400">
+					<Tabs.Trigger
+						value="filters"
+						class="rounded-full px-2 py-2 text-xs font-semibold text-slate-300 hover:text-white data-active:bg-white data-active:text-black"
+					>
+						Filters
+					</Tabs.Trigger>
+					<Tabs.Trigger
+						value="results"
+						class="rounded-full px-2 py-2 text-xs font-semibold text-slate-300 hover:text-white data-active:bg-white data-active:text-black"
+					>
+						Results
+					</Tabs.Trigger>
+					<Tabs.Trigger
+						value="details"
+						class="rounded-full px-2 py-2 text-xs font-semibold text-slate-300 hover:text-white data-active:bg-white data-active:text-black"
+					>
+						Details
+					</Tabs.Trigger>
+				</Tabs.List>
 
-			<RecommendationResultsPanel
-				{recommendations}
-				{resultsStale}
-				{totalRecommendations}
-				{recommendationsPerPage}
-				{currentPage}
-				{selectedRecommendationKey}
-				{recommendationSort}
-				on:sortChange={(event) => (recommendationSort = event.detail)}
-				on:pageChange={(event) => (currentPage = event.detail)}
-				on:selectRecommendation={(event) => (selectedRecommendationKey = event.detail)}
-			/>
+				<Tabs.Content value="filters" class="mt-4">
+					<VehiclePreferencesForm
+						{budgetRange}
+						{priceRangeMax}
+						{budgetTicks}
+						{isLoadingBudgetRange}
+						{ageRange}
+						{ageRangeMax}
+						{ageTicks}
+						{isLoadingAgeRange}
+						{preferredBrand}
+						{bodyType}
+						{drivetrain}
+						{fuelType}
+						{usageType}
+						{brandOptions}
+						{bodyTypeOptions}
+						{drivetrainOptions}
+						{fuelOptions}
+						{isLoadingBrands}
+						{isLoadingBodyTypes}
+						{isLoadingDrivetrains}
+						{isLoadingFuelTypes}
+						{requestError}
+						{isSubmitting}
+						on:submit={() => void submitPreferences()}
+						on:budgetRangeChange={(event) => (budgetRange = event.detail)}
+						on:ageRangeChange={(event) => (ageRange = event.detail)}
+						on:brandChange={(event) => handleBrandChange(event.detail)}
+						on:bodyTypeChange={(event) => handleBodyTypeChange(event.detail)}
+						on:drivetrainChange={(event) => handleDrivetrainChange(event.detail)}
+						on:fuelTypeChange={(event) => handleFuelTypeChange(event.detail)}
+						on:usageTypeChange={(event) => (usageType = event.detail)}
+					/>
+				</Tabs.Content>
+
+				<Tabs.Content value="results" class="mt-4">
+					<RecommendationResultsPanel
+						{recommendations}
+						{resultsStale}
+						{totalRecommendations}
+						{recommendationsPerPage}
+						{currentPage}
+						{selectedRecommendationKey}
+						{recommendationSort}
+						on:sortChange={(event) => (recommendationSort = event.detail)}
+						on:pageChange={(event) => (currentPage = event.detail)}
+						on:selectRecommendation={(event) => selectRecommendation(event.detail)}
+					/>
+				</Tabs.Content>
+
+				<Tabs.Content value="details" class="mt-4">
+					<DepreciationForecastPanel
+						{selectedRecommendation}
+						{isLoadingDepreciation}
+						{depreciationError}
+						{depreciationViewData}
+						{selectedUsageLabel}
+						{depreciationMetric}
+						{depreciationCaption}
+						on:metricChange={(event) => (depreciationMetric = event.detail)}
+					/>
+				</Tabs.Content>
+			</Tabs.Root>
 		</div>
 
-		<DepreciationForecastPanel
-			{selectedRecommendation}
-			{isLoadingDepreciation}
-			{depreciationError}
-			{depreciationViewData}
-			{selectedUsageLabel}
-			{depreciationMetric}
-			{depreciationCaption}
-			on:metricChange={(event) => (depreciationMetric = event.detail)}
-		/>
+		<div class="hidden lg:block">
+			<div class="grid gap-4 sm:gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+				<VehiclePreferencesForm
+					{budgetRange}
+					{priceRangeMax}
+					{budgetTicks}
+					{isLoadingBudgetRange}
+					{ageRange}
+					{ageRangeMax}
+					{ageTicks}
+					{isLoadingAgeRange}
+					{preferredBrand}
+					{bodyType}
+					{drivetrain}
+					{fuelType}
+					{usageType}
+					{brandOptions}
+					{bodyTypeOptions}
+					{drivetrainOptions}
+					{fuelOptions}
+					{isLoadingBrands}
+					{isLoadingBodyTypes}
+					{isLoadingDrivetrains}
+					{isLoadingFuelTypes}
+					{requestError}
+					{isSubmitting}
+					on:submit={() => void submitPreferences()}
+					on:budgetRangeChange={(event) => (budgetRange = event.detail)}
+					on:ageRangeChange={(event) => (ageRange = event.detail)}
+					on:brandChange={(event) => handleBrandChange(event.detail)}
+					on:bodyTypeChange={(event) => handleBodyTypeChange(event.detail)}
+					on:drivetrainChange={(event) => handleDrivetrainChange(event.detail)}
+					on:fuelTypeChange={(event) => handleFuelTypeChange(event.detail)}
+					on:usageTypeChange={(event) => (usageType = event.detail)}
+				/>
+
+				<RecommendationResultsPanel
+					{recommendations}
+					{resultsStale}
+					{totalRecommendations}
+					{recommendationsPerPage}
+					{currentPage}
+					{selectedRecommendationKey}
+					{recommendationSort}
+					on:sortChange={(event) => (recommendationSort = event.detail)}
+					on:pageChange={(event) => (currentPage = event.detail)}
+					on:selectRecommendation={(event) => (selectedRecommendationKey = event.detail)}
+				/>
+			</div>
+
+			<DepreciationForecastPanel
+				{selectedRecommendation}
+				{isLoadingDepreciation}
+				{depreciationError}
+				{depreciationViewData}
+				{selectedUsageLabel}
+				{depreciationMetric}
+				{depreciationCaption}
+				on:metricChange={(event) => (depreciationMetric = event.detail)}
+			/>
+		</div>
 	</div>
 </div>
