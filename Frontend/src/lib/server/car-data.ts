@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { buildFuelEstimate } from '$lib/features/vehicle-recommendation/fuel-estimation.js';
 
 export type CarRecord = {
 	manufacturer_name: string;
@@ -11,6 +12,11 @@ export type CarRecord = {
 	odometer_value: number;
 	transmission: string;
 	engine_fuel: string;
+	engine_capacity?: number;
+	engine_type?: string;
+	engine_has_gas?: boolean;
+	estimated_fuel_usage_l_per_100km?: number;
+	fuel_estimate_note?: string;
 };
 
 type UsageType = 'daily' | 'road-trips' | 'weekend';
@@ -74,22 +80,33 @@ async function loadCars() {
 		const modelName = columns[headerIndex.model_name]?.trim();
 		const priceValue = Number(columns[headerIndex.price_usd]);
 		const odometerValue = Number(columns[headerIndex.odometer_value]);
+		const engineCapacityValue = Number(columns[headerIndex.engine_capacity]);
+		const engineHasGasRaw = columns[headerIndex.engine_has_gas]?.trim().toLowerCase();
 
 		if (!manufacturer || !bodyType || !modelName || Number.isNaN(priceValue)) {
 			return [];
 		}
 
+		const carRecord: CarRecord = {
+			manufacturer_name: manufacturer,
+			model_name: modelName,
+			body_type: bodyType,
+			drivetrain: columns[headerIndex.drivetrain]?.trim() ?? '',
+			price_usd: priceValue,
+			year_produced: columns[headerIndex.year_produced]?.trim() ?? '',
+			odometer_value: Number.isNaN(odometerValue) ? 0 : odometerValue,
+			transmission: columns[headerIndex.transmission]?.trim() ?? '',
+			engine_fuel: columns[headerIndex.engine_fuel]?.trim() ?? '',
+			engine_capacity: Number.isNaN(engineCapacityValue) ? undefined : engineCapacityValue,
+			engine_type: columns[headerIndex.engine_type]?.trim() ?? '',
+			engine_has_gas:
+				engineHasGasRaw === 'true' ? true : engineHasGasRaw === 'false' ? false : undefined
+		};
+
 		return [
 			{
-				manufacturer_name: manufacturer,
-				model_name: modelName,
-				body_type: bodyType,
-				drivetrain: columns[headerIndex.drivetrain]?.trim() ?? '',
-				price_usd: priceValue,
-				year_produced: columns[headerIndex.year_produced]?.trim() ?? '',
-				odometer_value: Number.isNaN(odometerValue) ? 0 : odometerValue,
-				transmission: columns[headerIndex.transmission]?.trim() ?? '',
-				engine_fuel: columns[headerIndex.engine_fuel]?.trim() ?? ''
+				...carRecord,
+				...buildFuelEstimate(carRecord)
 			}
 		];
 	});

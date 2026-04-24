@@ -4,6 +4,7 @@
 	import * as Pagination from '$lib/components/ui/pagination';
 	import {
 		drivetrainLabels,
+		formatFuelUsageEstimate,
 		getBodyTypeIcon,
 		getFuelBadgeClasses,
 		recommendationSortOptions
@@ -119,6 +120,12 @@
 										{car.engine_fuel || 'Fuel unknown'}
 									</span>
 								</div>
+								<p class="mt-2 text-sm text-slate-300">
+									Estimated fuel use:
+									<span class="font-semibold text-white">
+										{formatFuelUsageEstimate(car.estimated_fuel_usage_l_per_100km)}
+									</span>
+								</p>
 								<p class="mt-2 text-[15px] font-semibold text-white">${car.price_usd.toLocaleString()}</p>
 							</div>
 						</div>

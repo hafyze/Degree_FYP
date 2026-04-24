@@ -94,6 +94,14 @@ export function formatOdometer(value?: number) {
 	return `${Math.round(value).toLocaleString()} km`;
 }
 
+export function formatFuelUsageEstimate(value?: number) {
+	if (typeof value !== 'number' || Number.isNaN(value)) {
+		return 'N/A';
+	}
+
+	return `${value.toFixed(1)} L/100km`;
+}
+
 export function getBodyTypeIcon(bodyTypeValue: string) {
 	return bodyTypeIconMap[bodyTypeValue.toLowerCase()];
 }

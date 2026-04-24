@@ -10,6 +10,11 @@ export type Recommendation = {
 	odometer_value?: number;
 	transmission: string;
 	engine_fuel: string;
+	engine_capacity?: number;
+	engine_type?: string;
+	engine_has_gas?: boolean;
+	estimated_fuel_usage_l_per_100km?: number;
+	fuel_estimate_note?: string;
 };
 
 export type CarImageView = {

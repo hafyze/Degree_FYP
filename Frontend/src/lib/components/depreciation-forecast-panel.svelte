@@ -2,6 +2,9 @@
 	import { createEventDispatcher } from 'svelte';
 	import * as Chart from '$lib/components/ui/chart';
 	import * as Carousel from '$lib/components/ui/carousel';
+	import * as Popover from '$lib/components/ui/popover';
+	import { HugeiconsIcon } from '@hugeicons/svelte';
+	import { InformationCircleIcon } from '@hugeicons/core-free-icons';
 	import {
 		LineChart,
 		Tooltip as LayerTooltip
@@ -9,6 +12,7 @@
 	import {
 		drivetrainLabels,
 		formatCurrency,
+		formatFuelUsageEstimate,
 		formatLoss,
 		formatOdometer,
 		formatPercent
@@ -123,6 +127,28 @@
 						<p class="text-xs text-slate-500">Odometer</p>
 						<p class="mt-1 text-base font-semibold text-white">
 							{formatOdometer(selectedRecommendation.odometer_value)}
+						</p>
+					</div>
+					<div class="rounded-[1rem] border border-white/10 bg-neutral-950 px-4 py-3">
+						<div class="flex items-center gap-2">
+							<p class="text-xs text-slate-500">Estimated fuel use</p>
+							<Popover.Root>
+								<Popover.Trigger
+									class="inline-flex size-4 items-center justify-center rounded-full text-slate-500 transition hover:text-white focus:outline-none focus:ring-2 focus:ring-slate-700"
+									aria-label="Show fuel estimate basis"
+								>
+									<HugeiconsIcon icon={InformationCircleIcon} class="size-4" />
+								</Popover.Trigger>
+								<Popover.Content
+									sideOffset={8}
+									class="max-w-56 border-white/10! bg-neutral-950! px-3 py-2 text-sm leading-5 text-slate-200! shadow-xl"
+								>
+									{selectedRecommendation.fuel_estimate_note || 'Estimated from engine and vehicle attributes.'}
+								</Popover.Content>
+							</Popover.Root>
+						</div>
+						<p class="mt-1 text-base font-semibold text-white">
+							{formatFuelUsageEstimate(selectedRecommendation.estimated_fuel_usage_l_per_100km)}
 						</p>
 					</div>
 				</div>
