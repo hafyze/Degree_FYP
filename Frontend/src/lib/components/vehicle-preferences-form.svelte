@@ -429,8 +429,7 @@
 			</p>
 		{/if}
 
-		<div class="flex flex-col gap-3 border-t border-white/10 pt-4 sm:flex-row sm:items-center sm:justify-between sm:pt-5">
-			<p class="text-sm text-slate-500">Dataset filter and recommendation system.</p>
+		<div class="flex justify-end border-t border-white/10 pt-4 sm:pt-5">
 			<Button type="submit" size="lg" class="h-11 w-full rounded-full bg-white px-5 text-sm font-semibold text-black hover:bg-slate-200 sm:h-10 sm:w-auto" disabled={isSubmitting}>
 				{isSubmitting ? 'Loading...' : 'Get recommendations'}
 			</Button>
@@ -456,6 +455,12 @@
 	:global(.combobox-popover [data-slot='input-group']:focus-within) {
 		border-color: rgba(255, 255, 255, 0.16);
 		box-shadow: none;
+	}
+
+	:global(.combobox-popover [data-slot='input-group']:has([data-slot='command-input']:focus-visible)) {
+		border-color: rgba(255, 255, 255, 0.08);
+		box-shadow: none;
+		outline: none;
 	}
 
 	:global(.combobox-popover [data-slot='input-group-addon']) {
