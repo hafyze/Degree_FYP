@@ -102,6 +102,14 @@ export function formatFuelUsageEstimate(value?: number) {
 	return `${value.toFixed(1)} L/100km`;
 }
 
+export function formatEngineCapacity(value?: number) {
+	if (typeof value !== 'number' || Number.isNaN(value)) {
+		return 'N/A';
+	}
+
+	return `${value.toFixed(1)}L`;
+}
+
 export function getBodyTypeIcon(bodyTypeValue: string) {
 	return bodyTypeIconMap[bodyTypeValue.toLowerCase()];
 }

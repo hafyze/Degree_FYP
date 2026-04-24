@@ -11,6 +11,7 @@
 	} from 'layerchart';
 	import {
 		drivetrainLabels,
+		formatEngineCapacity,
 		formatCurrency,
 		formatFuelUsageEstimate,
 		formatLoss,
@@ -147,8 +148,14 @@
 								</Popover.Content>
 							</Popover.Root>
 						</div>
+						<div class="mt-1 flex items-center gap-2 text-base font-semibold text-white">
+							<span>{formatFuelUsageEstimate(selectedRecommendation.estimated_fuel_usage_l_per_100km)}</span>
+						</div>
+					</div>
+					<div class="rounded-[1rem] border border-white/10 bg-neutral-950 px-4 py-3">
+						<p class="text-xs text-slate-500">Engine capacity</p>
 						<p class="mt-1 text-base font-semibold text-white">
-							{formatFuelUsageEstimate(selectedRecommendation.estimated_fuel_usage_l_per_100km)}
+							{formatEngineCapacity(selectedRecommendation.engine_capacity)}
 						</p>
 					</div>
 				</div>
