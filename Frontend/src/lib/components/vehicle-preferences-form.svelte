@@ -85,10 +85,12 @@
 	let bodyTypeOpen = $state(false);
 	let drivetrainOpen = $state(false);
 	let fuelTypeOpen = $state(false);
+	let isAdjustingAgeRange = $state(false);
 	let brandTriggerRef = $state<HTMLButtonElement>(null!);
 	let bodyTypeTriggerRef = $state<HTMLButtonElement>(null!);
 	let drivetrainTriggerRef = $state<HTMLButtonElement>(null!);
 	let fuelTypeTriggerRef = $state<HTMLButtonElement>(null!);
+	const currentCalendarYear = new Date().getFullYear();
 
 	const selectedBrandLabel = $derived(
 		brandOptions.find((option) => option.value === preferredBrand)?.label
@@ -197,6 +199,10 @@
 				step={1}
 				disabled={isLoadingAgeRange}
 				class="py-1"
+				showThumbLabels={isAdjustingAgeRange}
+				thumbLabelFormatter={(thumbValue) => `${currentCalendarYear - Math.round(thumbValue)}`}
+				onpointerdown={() => (isAdjustingAgeRange = true)}
+				onValueCommit={() => (isAdjustingAgeRange = false)}
 				onValueChange={(value) => dispatch('ageRangeChange', value as [number, number])}
 			/>
 
