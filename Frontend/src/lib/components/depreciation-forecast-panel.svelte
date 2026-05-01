@@ -81,7 +81,7 @@
 	);
 </script>
 
-<section class="mt-4 rounded-[1.5rem] border border-white/10 bg-neutral-950 p-4 sm:mt-6 sm:rounded-[2rem] sm:p-6">
+<section id="depreciation-section" class="mt-4 rounded-[1.5rem] border border-white/10 bg-neutral-950 p-4 sm:mt-6 sm:rounded-[2rem] sm:p-6">
 	<div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
 		<div class="flex items-start gap-3">
 			<div class="flex size-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white">

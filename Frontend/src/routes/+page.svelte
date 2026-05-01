@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import DepreciationForecastPanel from '$lib/components/depreciation-forecast-panel.svelte';
 	import RecommendationResultsPanel from '$lib/components/recommendation-results-panel.svelte';
 	import VehiclePreferencesForm from '$lib/components/vehicle-preferences-form.svelte';
@@ -62,6 +62,8 @@
 	let totalRecommendations = $state(0);
 	let lastObservedSort = $state<RecommendationSort>('recommended');
 	let mobileTab = $state('filters');
+	let mobileDepreciationSection = $state<HTMLDivElement | null>(null);
+	let desktopDepreciationSection = $state<HTMLDivElement | null>(null);
 
 	const recommendationsPerPage = 6;
 
@@ -403,9 +405,20 @@
 		}
 	}
 
-	function selectRecommendation(nextRecommendationKey: string) {
+	async function selectRecommendation(nextRecommendationKey: string) {
 		selectedRecommendationKey = nextRecommendationKey;
 		mobileTab = 'details';
+		await tick();
+
+		const target =
+			typeof window !== 'undefined' && window.innerWidth < 1024
+				? mobileDepreciationSection
+				: desktopDepreciationSection;
+
+		target?.scrollIntoView({
+			behavior: 'smooth',
+			block: 'start'
+		});
 	}
 
 	function handleBrandChange(nextBrand: string) {
@@ -622,16 +635,18 @@
 				</Tabs.Content>
 
 				<Tabs.Content value="details" class="mt-4">
-					<DepreciationForecastPanel
-						{selectedRecommendation}
-						{isLoadingDepreciation}
-						{depreciationError}
-						{depreciationViewData}
-						{selectedUsageLabel}
-						{depreciationMetric}
-						{depreciationCaption}
-						on:metricChange={(event) => (depreciationMetric = event.detail)}
-					/>
+					<div bind:this={mobileDepreciationSection}>
+						<DepreciationForecastPanel
+							{selectedRecommendation}
+							{isLoadingDepreciation}
+							{depreciationError}
+							{depreciationViewData}
+							{selectedUsageLabel}
+							{depreciationMetric}
+							{depreciationCaption}
+							on:metricChange={(event) => (depreciationMetric = event.detail)}
+						/>
+					</div>
 				</Tabs.Content>
 			</Tabs.Root>
 		</div>
@@ -682,20 +697,22 @@
 					{recommendationSort}
 					on:sortChange={(event) => (recommendationSort = event.detail)}
 					on:pageChange={(event) => (currentPage = event.detail)}
-					on:selectRecommendation={(event) => (selectedRecommendationKey = event.detail)}
+					on:selectRecommendation={(event) => void selectRecommendation(event.detail)}
 				/>
 			</div>
 
-			<DepreciationForecastPanel
-				{selectedRecommendation}
-				{isLoadingDepreciation}
-				{depreciationError}
-				{depreciationViewData}
-				{selectedUsageLabel}
-				{depreciationMetric}
-				{depreciationCaption}
-				on:metricChange={(event) => (depreciationMetric = event.detail)}
-			/>
+			<div bind:this={desktopDepreciationSection}>
+				<DepreciationForecastPanel
+					{selectedRecommendation}
+					{isLoadingDepreciation}
+					{depreciationError}
+					{depreciationViewData}
+					{selectedUsageLabel}
+					{depreciationMetric}
+					{depreciationCaption}
+					on:metricChange={(event) => (depreciationMetric = event.detail)}
+				/>
+			</div>
 		</div>
 	</div>
 </div>
