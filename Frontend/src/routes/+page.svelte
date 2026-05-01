@@ -6,6 +6,7 @@
 	import * as Tabs from '$lib/components/ui/tabs';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import {
+		Car02Icon,
 		ChartLineData02Icon,
 		FilterHorizontalIcon,
 		SearchIcon
@@ -527,10 +528,12 @@
 	<div class="mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
 		<div class="mb-4 space-y-2 sm:mb-6 sm:space-y-3">
 			<div class="flex items-center gap-3 sm:gap-4">
-				
 				<p class="text-3xl font-black text-white sm:text-5xl lg:text-6xl tracking-normal">
-					CarTraderMy
+					CarTradezMy
 				</p>
+				<div class="flex items-center justify-center text-white/90">
+					<HugeiconsIcon icon={Car02Icon} class="size-9 sm:size-12 lg:size-14" strokeWidth={1.8} />
+				</div> 
 			</div>
 			<h1 class="text-lg font-semibold tracking-[-0.03em] text-slate-300 sm:text-2xl">
 				Find Your Next Car
