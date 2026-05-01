@@ -57,34 +57,34 @@
 </script>
 
 <aside class="rounded-[1.5rem] border border-white/10 bg-neutral-950 p-4 sm:rounded-[2rem] sm:p-6">
-	<div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+	<div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
 		<div class="flex items-start gap-3">
 			<div class="flex size-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white">
 				<HugeiconsIcon icon={SearchIcon} class="size-5" />
 			</div>
 			<div>
-				<p class="text-sm font-semibold tracking-[0.18em] text-slate-400 uppercase">Recommendations</p>
-				<h2 class="mt-2 text-2xl font-black tracking-[-0.04em] text-white">Results</h2>
+				<p class="text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">Recommendations</p>
+				<h2 class="mt-1 text-2xl font-black tracking-normal text-white">Cars</h2>
 			</div>
 		</div>
-		<div class="flex flex-col items-stretch gap-3 sm:items-end">
-			<div class="rounded-full border border-white/10 bg-black px-4 py-2 text-sm text-slate-300">
+		<div class="flex flex-col gap-3 sm:flex-row sm:items-start lg:ml-auto">
+			<div class="mx-auto inline-flex items-center justify-center rounded-full border border-white/10 bg-black px-4 py-2 text-center text-sm text-slate-300 sm:mx-0">
 				{resultsStale ? 'Filters changed' : `${totalRecommendations} found`}
 			</div>
+			<label class="space-y-2">
+				<span class="text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">Sort by</span>
+				<select
+					value={recommendationSort}
+					class="h-10 w-full rounded-full border border-white/10 bg-black px-4 text-sm text-white focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-700 sm:min-w-52"
+					onchange={(event) =>
+						dispatch('sortChange', (event.currentTarget as HTMLSelectElement).value as RecommendationSort)}
+				>
+					{#each recommendationSortOptions as option}
+						<option value={option.value}>{option.label}</option>
+					{/each}
+				</select>
+			</label>
 		</div>
-		<label class="space-y-2 sm:ml-auto">
-			<span class="text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">Sort by</span>
-			<select
-				value={recommendationSort}
-				class="h-10 w-full rounded-full border border-white/10 bg-black px-4 text-sm text-white focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-700 sm:min-w-52"
-				onchange={(event) =>
-					dispatch('sortChange', (event.currentTarget as HTMLSelectElement).value as RecommendationSort)}
-			>
-				{#each recommendationSortOptions as option}
-					<option value={option.value}>{option.label}</option>
-				{/each}
-			</select>
-		</label>
 	</div>
 
 	<ScrollArea.Root class="mt-4 lg:h-124" orientation="vertical" scrollbarYClasses="w-2.5">
