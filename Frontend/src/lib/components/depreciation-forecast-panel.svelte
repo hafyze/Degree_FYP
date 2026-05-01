@@ -4,7 +4,10 @@
 	import * as Carousel from '$lib/components/ui/carousel';
 	import * as Popover from '$lib/components/ui/popover';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
-	import { InformationCircleIcon } from '@hugeicons/core-free-icons';
+	import {
+		ChartLineData02Icon,
+		InformationCircleIcon
+	} from '@hugeicons/core-free-icons';
 	import {
 		LineChart,
 		Tooltip as LayerTooltip
@@ -80,9 +83,14 @@
 
 <section class="mt-4 rounded-[1.5rem] border border-white/10 bg-neutral-950 p-4 sm:mt-6 sm:rounded-[2rem] sm:p-6">
 	<div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-		<div>
-			<p class="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase sm:text-sm">Depreciation</p>
-			<h2 class="mt-1.5 text-xl font-black tracking-[-0.04em] text-white sm:mt-2 sm:text-2xl">Projected value trend</h2>
+		<div class="flex items-start gap-3">
+			<div class="flex size-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white">
+				<HugeiconsIcon icon={ChartLineData02Icon} class="size-5" />
+			</div>
+			<div>
+				<p class="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase sm:text-sm">Depreciation</p>
+				<h2 class="mt-1.5 text-xl font-black tracking-[-0.04em] text-white sm:mt-2 sm:text-2xl">Projected value trend</h2>
+			</div>
 		</div>
 		{#if selectedRecommendation}
 			<div class="text-sm text-slate-400">

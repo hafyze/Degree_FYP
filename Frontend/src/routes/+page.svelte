@@ -4,6 +4,12 @@
 	import RecommendationResultsPanel from '$lib/components/recommendation-results-panel.svelte';
 	import VehiclePreferencesForm from '$lib/components/vehicle-preferences-form.svelte';
 	import * as Tabs from '$lib/components/ui/tabs';
+	import { HugeiconsIcon } from '@hugeicons/svelte';
+	import {
+		ChartLineData02Icon,
+		FilterHorizontalIcon,
+		SearchIcon
+	} from '@hugeicons/core-free-icons';
 	import {
 		bodyTypeIconMap,
 		drivetrainLabels,
@@ -506,13 +512,30 @@
 
 <div class="min-h-screen bg-black text-slate-100">
 	<div class="mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
-		<div class="mb-4 space-y-1.5 sm:mb-6 sm:space-y-2">
-			<p class="text-xs font-semibold tracking-[0.22em] text-slate-400 uppercase sm:text-sm sm:tracking-[0.24em]">
-				Fyze's Smart Car Recommendation System
-			</p>
-			<h1 class="text-2xl font-black tracking-[-0.04em] text-white sm:text-4xl">
-				Vehicle Recommendation
+		<div class="mb-4 space-y-2 sm:mb-6 sm:space-y-3">
+			<div class="flex items-center gap-3 sm:gap-4">
+				
+				<p class="text-3xl font-black text-white sm:text-5xl lg:text-6xl tracking-normal">
+					CarTraderMy
+				</p>
+			</div>
+			<h1 class="text-lg font-semibold tracking-[-0.03em] text-slate-300 sm:text-2xl">
+				Find Your Next Car
 			</h1>
+			<div class="flex flex-wrap gap-2 pt-1">
+				<div class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-200 sm:text-sm">
+					<HugeiconsIcon icon={FilterHorizontalIcon} class="size-4 text-slate-300" />
+					Smart filters
+				</div>
+				<div class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-200 sm:text-sm">
+					<HugeiconsIcon icon={SearchIcon} class="size-4 text-slate-300" />
+					Matched results
+				</div>
+				<div class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-200 sm:text-sm">
+					<HugeiconsIcon icon={ChartLineData02Icon} class="size-4 text-slate-300" />
+					Value forecast
+				</div>
+			</div>
 		</div>
 
 		<div class="lg:hidden">
@@ -522,19 +545,28 @@
 						value="filters"
 						class="rounded-full px-2 py-2 text-xs font-semibold text-slate-300 hover:text-white data-active:bg-white data-active:text-black"
 					>
-						Filters
+						<span class="inline-flex items-center gap-1.5">
+							<HugeiconsIcon icon={FilterHorizontalIcon} class="size-4" />
+							Filters
+						</span>
 					</Tabs.Trigger>
 					<Tabs.Trigger
 						value="results"
 						class="rounded-full px-2 py-2 text-xs font-semibold text-slate-300 hover:text-white data-active:bg-white data-active:text-black"
 					>
-						Results
+						<span class="inline-flex items-center gap-1.5">
+							<HugeiconsIcon icon={SearchIcon} class="size-4" />
+							Results
+						</span>
 					</Tabs.Trigger>
 					<Tabs.Trigger
 						value="details"
 						class="rounded-full px-2 py-2 text-xs font-semibold text-slate-300 hover:text-white data-active:bg-white data-active:text-black"
 					>
-						Details
+						<span class="inline-flex items-center gap-1.5">
+							<HugeiconsIcon icon={ChartLineData02Icon} class="size-4" />
+							Details
+						</span>
 					</Tabs.Trigger>
 				</Tabs.List>
 

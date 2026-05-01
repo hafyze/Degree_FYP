@@ -5,6 +5,13 @@
 	import * as Slider from '$lib/components/ui/slider';
 	import { Button } from '$lib/components/ui/button';
 	import { cn } from '$lib/utils';
+	import { HugeiconsIcon } from '@hugeicons/svelte';
+	import {
+		Car01Icon,
+		CarTimeIcon,
+		DashboardSpeed01Icon,
+		FilterHorizontalIcon
+	} from '@hugeicons/core-free-icons';
 	import {
 		bodyTypeIconMap,
 		drivetrainLabels,
@@ -101,6 +108,11 @@
 		drivetrainOptions.find((option) => option.value === drivetrain)?.label
 	);
 	const selectedFuelLabel = $derived(fuelOptions.find((option) => option.value === fuelType)?.label);
+	const usageIcons = {
+		daily: Car01Icon,
+		'road-trips': DashboardSpeed01Icon,
+		weekend: CarTimeIcon
+	} satisfies Record<UsageType, typeof Car01Icon>;
 
 	async function handleBrandChange(nextBrand: string) {
 		dispatch('brandChange', nextBrand);
@@ -422,6 +434,9 @@
 						}`}
 						onclick={() => dispatch('usageTypeChange', option.value)}
 					>
+						<div class="mb-3 flex size-10 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white">
+							<HugeiconsIcon icon={usageIcons[option.value]} class="size-5" />
+						</div>
 						<p class="text-[15px] font-bold text-white">{option.label}</p>
 						<p class="mt-1 text-sm leading-5 text-slate-500">{option.description}</p>
 					</button>

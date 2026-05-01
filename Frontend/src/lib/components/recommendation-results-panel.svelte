@@ -2,6 +2,8 @@
 	import { createEventDispatcher } from 'svelte';
 	import * as ScrollArea from '$lib/components/ui/scroll-area';
 	import * as Pagination from '$lib/components/ui/pagination';
+	import { HugeiconsIcon } from '@hugeicons/svelte';
+	import { SearchIcon } from '@hugeicons/core-free-icons';
 	import {
 		drivetrainLabels,
 		formatFuelUsageEstimate,
@@ -56,9 +58,14 @@
 
 <aside class="rounded-[1.5rem] border border-white/10 bg-neutral-950 p-4 sm:rounded-[2rem] sm:p-6">
 	<div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-		<div>
-			<p class="text-sm font-semibold tracking-[0.18em] text-slate-400 uppercase">Recommendations</p>
-			<h2 class="mt-2 text-2xl font-black tracking-[-0.04em] text-white">Results</h2>
+		<div class="flex items-start gap-3">
+			<div class="flex size-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white">
+				<HugeiconsIcon icon={SearchIcon} class="size-5" />
+			</div>
+			<div>
+				<p class="text-sm font-semibold tracking-[0.18em] text-slate-400 uppercase">Recommendations</p>
+				<h2 class="mt-2 text-2xl font-black tracking-[-0.04em] text-white">Results</h2>
+			</div>
 		</div>
 		<div class="flex flex-col items-stretch gap-3 sm:items-end">
 			<div class="rounded-full border border-white/10 bg-black px-4 py-2 text-sm text-slate-300">
