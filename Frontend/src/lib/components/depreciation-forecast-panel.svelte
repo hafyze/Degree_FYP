@@ -81,20 +81,20 @@
 	);
 </script>
 
-<section id="depreciation-section" class="mt-4 rounded-[1.5rem] border border-white/10 bg-neutral-950 p-4 sm:mt-6 sm:rounded-[2rem] sm:p-6">
+<section id="depreciation-section" class="mt-4 rounded-[1.5rem] border border-border bg-card p-4 text-foreground sm:mt-6 sm:rounded-[2rem] sm:p-6">
 	<div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
 		<div class="flex items-start gap-3">
-			<div class="flex size-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white">
+			<div class="flex size-11 items-center justify-center rounded-2xl border border-border bg-muted/50 text-foreground">
 				<HugeiconsIcon icon={ChartLineData02Icon} class="size-5" />
 			</div>
 			<div>
-				<p class="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase sm:text-sm">Depreciation</p>
-				<h2 class="mt-1.5 text-xl font-black tracking-[-0.04em] text-white sm:mt-2 sm:text-2xl">Projected value trend</h2>
+				<p class="text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase sm:text-sm">Depreciation</p>
+				<h2 class="mt-1.5 text-xl font-black tracking-[-0.04em] text-foreground sm:mt-2 sm:text-2xl">Projected value trend</h2>
 			</div>
 		</div>
 		{#if selectedRecommendation}
-			<div class="text-sm text-slate-400">
-				<span class="font-semibold text-white">{selectedRecommendation.manufacturer_name} {selectedRecommendation.model_name}</span>
+			<div class="text-sm text-muted-foreground">
+				<span class="font-semibold text-foreground">{selectedRecommendation.manufacturer_name} {selectedRecommendation.model_name}</span>
 				<span> · {selectedRecommendation.year_produced || 'Year unknown'} · ${selectedRecommendation.price_usd.toLocaleString()}</span>
 			</div>
 		{/if}

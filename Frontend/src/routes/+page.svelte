@@ -72,6 +72,7 @@
 	let totalRecommendations = $state(0);
 	let lastObservedSort = $state<RecommendationSort>('recommended');
 	let mobileTab = $state('filters');
+	let detailsTab = $state<'depreciation' | 'comparison'>('depreciation');
 	let mobileDepreciationSection = $state<HTMLDivElement | null>(null);
 	let desktopDepreciationSection = $state<HTMLDivElement | null>(null);
 	let comparisonKeys = $state<ComparisonItemKey[]>([]);
@@ -152,6 +153,7 @@
 			depreciationError = '';
 			comparisonKeys = [];
 			comparisonForecasts = [];
+			detailsTab = 'depreciation';
 		}
 	});
 
@@ -476,6 +478,7 @@
 	async function selectRecommendation(nextRecommendationKey: string) {
 		selectedRecommendationKey = nextRecommendationKey;
 		mobileTab = 'details';
+		detailsTab = 'depreciation';
 		await tick();
 
 		const target =
@@ -697,6 +700,8 @@
 		}
 
 		comparisonKeys = [...comparisonKeys, comparisonKey];
+		detailsTab = 'comparison';
+		mobileTab = 'details';
 		comparisonForecasts = [
 			...comparisonForecasts,
 			{
@@ -740,14 +745,14 @@
 	/>
 </svelte:head>
 
-<div class="min-h-screen bg-black text-slate-100">
+<div class="min-h-screen bg-background text-foreground transition-colors">
 	<div class="mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
 		<div class="mb-4 space-y-2 sm:mb-6 sm:space-y-3">
 			<div class="flex items-center gap-3 sm:gap-4">
-				<p class="text-3xl font-black text-white sm:text-5xl lg:text-6xl tracking-normal">
-					CarTradezMy
+				<p class="text-3xl font-black text-foreground sm:text-5xl lg:text-6xl tracking-normal">
+					FyzeUsedCar
 				</p>
-				<div class="flex items-center justify-center text-white/90">
+				<div class="flex items-center justify-center text-foreground/90">
 					<HugeiconsIcon icon={Car02Icon} class="size-9 sm:size-12 lg:size-14" strokeWidth={1.8} />
 				</div> 
 				<Button onclick={toggleMode} variant="outline" size="icon">
@@ -760,20 +765,20 @@
 					<span class="sr-only">Toggle theme</span>
 				</Button>
 			</div>
-			<h1 class="text-lg font-semibold tracking-[-0.03em] text-slate-300 sm:text-2xl">
+			<h1 class="text-lg font-semibold tracking-[-0.03em] text-muted-foreground sm:text-2xl">
 				Find Your Next Car
 			</h1>
 			<div class="flex flex-wrap gap-2 pt-1">
-				<div class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-200 sm:text-sm">
-					<HugeiconsIcon icon={FilterHorizontalIcon} class="size-4 text-slate-300" />
+				<div class="inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 px-3 py-1.5 text-xs font-semibold text-foreground sm:text-sm">
+					<HugeiconsIcon icon={FilterHorizontalIcon} class="size-4 text-muted-foreground" />
 					Smart filters
 				</div>
-				<div class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-200 sm:text-sm">
-					<HugeiconsIcon icon={SearchIcon} class="size-4 text-slate-300" />
+				<div class="inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 px-3 py-1.5 text-xs font-semibold text-foreground sm:text-sm">
+					<HugeiconsIcon icon={SearchIcon} class="size-4 text-muted-foreground" />
 					Matched results
 				</div>
-				<div class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-200 sm:text-sm">
-					<HugeiconsIcon icon={ChartLineData02Icon} class="size-4 text-slate-300" />
+				<div class="inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 px-3 py-1.5 text-xs font-semibold text-foreground sm:text-sm">
+					<HugeiconsIcon icon={ChartLineData02Icon} class="size-4 text-muted-foreground" />
 					Value forecast
 				</div>
 			</div>
@@ -781,10 +786,10 @@
 
 		<div class="lg:hidden">
 			<Tabs.Root bind:value={mobileTab} class="gap-4">
-				<Tabs.List class="grid h-auto w-full grid-cols-3 rounded-full border border-white/10 bg-neutral-950 p-1 text-slate-400">
+				<Tabs.List class="grid h-auto w-full grid-cols-3 rounded-full border border-border bg-card p-1 text-muted-foreground">
 					<Tabs.Trigger
 						value="filters"
-						class="rounded-full px-2 py-2 text-xs font-semibold text-slate-300 hover:text-white data-active:bg-white data-active:text-black"
+						class="rounded-full px-2 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground data-active:bg-primary data-active:text-primary-foreground"
 					>
 						<span class="inline-flex items-center gap-1.5">
 							<HugeiconsIcon icon={FilterHorizontalIcon} class="size-4" />
@@ -793,7 +798,7 @@
 					</Tabs.Trigger>
 					<Tabs.Trigger
 						value="results"
-						class="rounded-full px-2 py-2 text-xs font-semibold text-slate-300 hover:text-white data-active:bg-white data-active:text-black"
+						class="rounded-full px-2 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground data-active:bg-primary data-active:text-primary-foreground"
 					>
 						<span class="inline-flex items-center gap-1.5">
 							<HugeiconsIcon icon={SearchIcon} class="size-4" />
@@ -802,7 +807,7 @@
 					</Tabs.Trigger>
 					<Tabs.Trigger
 						value="details"
-						class="rounded-full px-2 py-2 text-xs font-semibold text-slate-300 hover:text-white data-active:bg-white data-active:text-black"
+						class="rounded-full px-2 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground data-active:bg-primary data-active:text-primary-foreground"
 					>
 						<span class="inline-flex items-center gap-1.5">
 							<HugeiconsIcon icon={ChartLineData02Icon} class="size-4" />
@@ -866,27 +871,58 @@
 				</Tabs.Content>
 
 				<Tabs.Content value="details" class="mt-4">
-					<div bind:this={mobileDepreciationSection}>
-						<DepreciationForecastPanel
-							{selectedRecommendation}
-							{isLoadingDepreciation}
-							{depreciationError}
-							{depreciationViewData}
-							{selectedUsageLabel}
-							{depreciationMetric}
-							{depreciationCaption}
-							on:metricChange={(event) => (depreciationMetric = event.detail)}
-						/>
+					<div bind:this={mobileDepreciationSection} class="rounded-[1.5rem] border border-border bg-card p-4 sm:rounded-[2rem] sm:p-6">
+						<div class="mb-4 flex items-start gap-3">
+							<div class="flex size-11 items-center justify-center rounded-2xl border border-border bg-muted/50 text-foreground">
+								<HugeiconsIcon icon={ChartLineData02Icon} class="size-5" />
+							</div>
+							<div>
+								<p class="text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase sm:text-sm">Details</p>
+								<h2 class="mt-1.5 text-xl font-black tracking-[-0.04em] text-foreground sm:mt-2 sm:text-2xl">Forecast and comparison</h2>
+							</div>
+						</div>
+
+						<Tabs.Root bind:value={detailsTab} class="gap-4">
+							<Tabs.List class="inline-flex rounded-full border border-border bg-muted/40 p-1 text-muted-foreground">
+								<Tabs.Trigger
+									value="depreciation"
+									class="rounded-full px-4 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground data-active:bg-primary data-active:text-primary-foreground"
+								>
+									Depreciation
+								</Tabs.Trigger>
+								<Tabs.Trigger
+									value="comparison"
+									class="rounded-full px-4 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground data-active:bg-primary data-active:text-primary-foreground"
+								>
+									Comparison
+								</Tabs.Trigger>
+							</Tabs.List>
+
+							<Tabs.Content value="depreciation" class="mt-4">
+								<DepreciationForecastPanel
+									{selectedRecommendation}
+									{isLoadingDepreciation}
+									{depreciationError}
+									{depreciationViewData}
+									{selectedUsageLabel}
+									{depreciationMetric}
+									{depreciationCaption}
+									on:metricChange={(event) => (depreciationMetric = event.detail)}
+								/>
+							</Tabs.Content>
+
+							<Tabs.Content value="comparison" class="mt-4">
+								<ComparisonPanel
+									comparisonItems={comparisonForecasts}
+									{comparisonChartData}
+									{maxComparisonItems}
+									on:removeComparison={(event) => removeComparisonItem(event.detail)}
+								/>
+							</Tabs.Content>
+						</Tabs.Root>
 					</div>
 				</Tabs.Content>
 			</Tabs.Root>
-
-			<ComparisonPanel
-				comparisonItems={comparisonForecasts}
-				{comparisonChartData}
-				{maxComparisonItems}
-				on:removeComparison={(event) => removeComparisonItem(event.detail)}
-			/>
 		</div>
 
 		<div class="hidden lg:block">
@@ -942,25 +978,56 @@
 				/>
 			</div>
 
-			<div bind:this={desktopDepreciationSection}>
-				<DepreciationForecastPanel
-					{selectedRecommendation}
-					{isLoadingDepreciation}
-					{depreciationError}
-					{depreciationViewData}
-					{selectedUsageLabel}
-					{depreciationMetric}
-					{depreciationCaption}
-					on:metricChange={(event) => (depreciationMetric = event.detail)}
-				/>
-			</div>
+			<div bind:this={desktopDepreciationSection} class="mt-4 rounded-[1.5rem] border border-border bg-card p-4 sm:mt-6 sm:rounded-[2rem] sm:p-6">
+				<div class="mb-4 flex items-start gap-3">
+					<div class="flex size-11 items-center justify-center rounded-2xl border border-border bg-muted/50 text-foreground">
+						<HugeiconsIcon icon={ChartLineData02Icon} class="size-5" />
+					</div>
+					<div>
+						<p class="text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase sm:text-sm">Details</p>
+						<h2 class="mt-1.5 text-xl font-black tracking-[-0.04em] text-foreground sm:mt-2 sm:text-2xl">Forecast and comparison</h2>
+					</div>
+				</div>
 
-			<ComparisonPanel
-				comparisonItems={comparisonForecasts}
-				{comparisonChartData}
-				{maxComparisonItems}
-				on:removeComparison={(event) => removeComparisonItem(event.detail)}
-			/>
+				<Tabs.Root bind:value={detailsTab} class="gap-4">
+					<Tabs.List class="inline-flex rounded-full border border-border bg-muted/40 p-1 text-muted-foreground">
+						<Tabs.Trigger
+							value="depreciation"
+							class="rounded-full px-4 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground data-active:bg-primary data-active:text-primary-foreground"
+						>
+							Depreciation
+						</Tabs.Trigger>
+						<Tabs.Trigger
+							value="comparison"
+							class="rounded-full px-4 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground data-active:bg-primary data-active:text-primary-foreground"
+						>
+							Comparison
+						</Tabs.Trigger>
+					</Tabs.List>
+
+					<Tabs.Content value="depreciation" class="mt-4">
+						<DepreciationForecastPanel
+							{selectedRecommendation}
+							{isLoadingDepreciation}
+							{depreciationError}
+							{depreciationViewData}
+							{selectedUsageLabel}
+							{depreciationMetric}
+							{depreciationCaption}
+							on:metricChange={(event) => (depreciationMetric = event.detail)}
+						/>
+					</Tabs.Content>
+
+					<Tabs.Content value="comparison" class="mt-4">
+						<ComparisonPanel
+							comparisonItems={comparisonForecasts}
+							{comparisonChartData}
+							{maxComparisonItems}
+							on:removeComparison={(event) => removeComparisonItem(event.detail)}
+						/>
+					</Tabs.Content>
+				</Tabs.Root>
+			</div>
 		</div>
 	</div>
 </div>

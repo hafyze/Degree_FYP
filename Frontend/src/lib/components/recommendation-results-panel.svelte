@@ -61,29 +61,29 @@
 	});
 </script>
 
-<aside class="rounded-[1.5rem] border border-white/10 bg-neutral-950 p-4 sm:rounded-[2rem] sm:p-6">
+<aside class="rounded-[1.5rem] border border-border bg-card p-4 sm:rounded-[2rem] sm:p-6">
 	<div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
 		<div class="flex items-start gap-3">
-			<div class="flex size-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white">
+			<div class="flex size-11 items-center justify-center rounded-2xl border border-border bg-muted/50 text-foreground">
 				<HugeiconsIcon icon={SearchIcon} class="size-5" />
 			</div>
 			<div>
-				<p class="text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">Recommendations</p>
-				<h2 class="mt-1 text-2xl font-black tracking-normal text-white">Cars</h2>
+				<p class="text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase">Recommendations</p>
+				<h2 class="mt-1 text-2xl font-black tracking-normal text-foreground">Cars</h2>
 			</div>
 		</div>
 		<div class="flex flex-col gap-3 sm:flex-row sm:items-start lg:ml-auto">
-			<div class="mx-auto inline-flex items-center justify-center rounded-full border border-white/10 bg-black px-4 py-2 text-center text-sm text-slate-300 sm:mx-0">
+			<div class="mx-auto inline-flex items-center justify-center rounded-full border border-border bg-muted/40 px-4 py-2 text-center text-sm text-muted-foreground sm:mx-0">
 				{resultsStale ? 'Filters changed' : `${totalRecommendations} found`}
 			</div>
-			<div class="mx-auto inline-flex items-center justify-center rounded-full border border-white/10 bg-black px-4 py-2 text-center text-sm text-slate-300 sm:mx-0">
+			<div class="mx-auto inline-flex items-center justify-center rounded-full border border-border bg-muted/40 px-4 py-2 text-center text-sm text-muted-foreground sm:mx-0">
 				Compare {comparisonKeys.length}/{maxComparisonItems}
 			</div>
 			<label class="space-y-2">
-				<span class="text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">Sort by</span>
+				<span class="text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase">Sort by</span>
 				<select
 					value={recommendationSort}
-					class="h-10 w-full rounded-full border border-white/10 bg-black px-4 text-sm text-white focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-700 sm:min-w-52"
+					class="h-10 w-full rounded-full border border-border bg-background px-4 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/30 sm:min-w-52"
 					onchange={(event) =>
 						dispatch('sortChange', (event.currentTarget as HTMLSelectElement).value as RecommendationSort)}
 				>

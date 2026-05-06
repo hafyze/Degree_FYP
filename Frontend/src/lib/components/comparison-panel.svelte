@@ -1,10 +1,17 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
 	import * as Chart from '$lib/components/ui/chart';
+	import * as Table from '$lib/components/ui/table';
 	import { HugeiconsIcon } from '@hugeicons/svelte';
 	import {
+		Car01Icon,
 		Cancel01Icon,
 		ChartLineData02Icon,
+		ChartDecreaseIcon,
+		ChartIncreaseIcon,
+		DashboardSpeed01Icon,
+		EngineIcon,
+		Fuel01Icon,
 		LeftToRightListNumberIcon
 	} from '@hugeicons/core-free-icons';
 	import {
@@ -14,6 +21,7 @@
 	import {
 		drivetrainLabels,
 		formatCurrency,
+		formatEngineCapacity,
 		formatFuelUsageEstimate,
 		formatLoss,
 		formatOdometer,
@@ -66,35 +74,89 @@
 		}))
 	);
 
-	function getSummaryPoints(points: ComparisonForecastState['points']) {
-		return {
-			oneYearPoint: points[1] ?? null,
-			threeYearPoint: points[3] ?? null,
-			fiveYearPoint: points[5] ?? points[points.length - 1] ?? null
-		};
-	}
+	const comparisonRows = $derived.by(() =>
+		comparisonItems.map((item) => {
+			const oneYearPoint = item.points[1] ?? null;
+			const threeYearPoint = item.points[3] ?? null;
+			const fiveYearPoint = item.points[5] ?? item.points[item.points.length - 1] ?? null;
+
+			return {
+				...item,
+				values: {
+					price: formatCurrency(item.car.price_usd),
+					engineCapacity: formatEngineCapacity(item.car.engine_capacity),
+					drivetrain:
+						drivetrainLabels[item.car.drivetrain ?? ''] ?? item.car.drivetrain ?? 'Unknown',
+					fuelType: item.car.engine_fuel || 'Unknown',
+					odometer: formatOdometer(item.car.odometer_value),
+					fuelUse: formatFuelUsageEstimate(item.car.estimated_fuel_usage_l_per_100km),
+					oneYearLoss: item.isLoading ? 'Loading...' : item.error ? item.error : formatLoss(
+						oneYearPoint ? item.car.price_usd - oneYearPoint.predicted_price_usd : null
+					),
+					threeYearLoss: item.isLoading ? 'Loading...' : item.error ? item.error : formatLoss(
+						threeYearPoint ? item.car.price_usd - threeYearPoint.predicted_price_usd : null
+					),
+					fiveYearLoss: item.isLoading ? 'Loading...' : item.error ? item.error : formatLoss(
+						fiveYearPoint ? item.car.price_usd - fiveYearPoint.predicted_price_usd : null
+					),
+					fiveYearRetention: item.isLoading ? 'Loading...' : item.error ? item.error : (
+						fiveYearPoint ? formatPercent(fiveYearPoint.value_retention_percent, 1) : 'N/A'
+					),
+					fiveYearValue: item.isLoading ? 'Loading...' : item.error ? item.error : (
+						fiveYearPoint ? formatCurrency(fiveYearPoint.predicted_price_usd) : 'N/A'
+					)
+				}
+			};
+		})
+	);
+
+	const rowDefinitions = [
+		{ key: 'price', label: 'Current price', icon: ChartLineData02Icon },
+		{ key: 'engineCapacity', label: 'Engine capacity', icon: EngineIcon },
+		{ key: 'drivetrain', label: 'Drivetrain', icon: Car01Icon },
+		{ key: 'fuelType', label: 'Fuel type', icon: Fuel01Icon },
+		{ key: 'odometer', label: 'Odometer', icon: DashboardSpeed01Icon },
+		{ key: 'fuelUse', label: 'Fuel use', icon: Fuel01Icon },
+		{ key: 'oneYearLoss', label: '1-year loss', icon: ChartDecreaseIcon },
+		{ key: 'threeYearLoss', label: '3-year loss', icon: ChartDecreaseIcon },
+		{ key: 'fiveYearLoss', label: '5-year loss', icon: ChartDecreaseIcon },
+		{ key: 'fiveYearRetention', label: '5-year retention', icon: ChartIncreaseIcon },
+		{ key: 'fiveYearValue', label: 'Projected 5-year value', icon: ChartLineData02Icon }
+	] as const;
 
 	function getVisibleTooltipSeries(context: {
 		tooltip?: { series?: Array<{ value: unknown; label: string; color?: string }> };
 	}) {
 		return context.tooltip?.series?.filter((series) => typeof series.value === 'number') ?? [];
 	}
+
+	function getCellClasses(item: ComparisonForecastState) {
+		if (item.error) {
+			return 'text-red-200';
+		}
+
+		if (item.isLoading) {
+			return 'text-slate-400';
+		}
+
+		return 'text-white';
+	}
 </script>
 
-<section class="mt-4 rounded-[1.5rem] border border-white/10 bg-neutral-950 p-4 sm:mt-6 sm:rounded-[2rem] sm:p-6">
+<section class="rounded-[1.5rem] border border-border bg-card p-4 sm:rounded-[2rem] sm:p-6">
 	<div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
 		<div class="flex items-start gap-3">
-			<div class="flex size-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white">
+			<div class="flex size-11 items-center justify-center rounded-2xl border border-border bg-muted/50 text-foreground">
 				<HugeiconsIcon icon={LeftToRightListNumberIcon} class="size-5" />
 			</div>
 			<div>
-				<p class="text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase sm:text-sm">Comparison</p>
-				<h2 class="mt-1.5 text-xl font-black tracking-[-0.04em] text-white sm:mt-2 sm:text-2xl">
+				<p class="text-xs font-semibold tracking-[0.18em] text-muted-foreground uppercase sm:text-sm">Comparison</p>
+				<h2 class="mt-1.5 text-xl font-black tracking-[-0.04em] text-foreground sm:mt-2 sm:text-2xl">
 					Compare selected cars
 				</h2>
 			</div>
 		</div>
-		<div class="rounded-full border border-white/10 bg-black px-4 py-2 text-sm text-slate-300">
+		<div class="rounded-full border border-border bg-muted/40 px-4 py-2 text-sm text-muted-foreground">
 			{comparisonItems.length}/{maxComparisonItems} selected
 		</div>
 	</div>
@@ -105,120 +167,60 @@
 				Use the Compare button on recommendation cards to start a side-by-side view.
 			</div>
 		{:else}
-			<div class="grid gap-3 xl:grid-cols-3">
-				{#each comparisonItems as item, index (item.key)}
-					{@const summary = getSummaryPoints(item.points)}
-					<article class="rounded-[1.2rem] border border-white/10 bg-black p-4 sm:rounded-[1.4rem]">
-						<div class="flex items-start justify-between gap-3">
-							<div>
-								<div class="mb-2 inline-flex items-center gap-2 rounded-full border border-white/10 bg-neutral-950 px-3 py-1 text-xs font-semibold text-slate-300">
-									<span
-										class="inline-flex h-2.5 w-2.5 rounded-full"
-										style={`background: ${comparisonColors[index % comparisonColors.length]};`}
-									></span>
-									Car {index + 1}
-								</div>
-								<h3 class="text-lg font-bold text-white">
-									{item.car.manufacturer_name} {item.car.model_name}
-								</h3>
-								<p class="mt-1 text-sm text-slate-400">
-									{item.car.body_type} · {item.car.year_produced || 'Year unknown'} ·
-									{item.car.transmission || 'Transmission unknown'}
-								</p>
-							</div>
-							<button
-								type="button"
-								class="inline-flex size-9 items-center justify-center rounded-full border border-white/10 bg-neutral-950 text-slate-400 transition hover:border-white/20 hover:text-white"
-								onclick={() => dispatch('removeComparison', item.key)}
-								aria-label={`Remove ${item.label} from comparison`}
-							>
-								<HugeiconsIcon icon={Cancel01Icon} class="size-4" />
-							</button>
-						</div>
-
-						<div class="mt-4 grid gap-2 sm:grid-cols-2">
-							<div class="rounded-[1rem] border border-white/10 bg-neutral-950 px-4 py-3">
-								<p class="text-xs text-slate-500">Current price</p>
-								<p class="mt-1 text-base font-semibold text-white">{formatCurrency(item.car.price_usd)}</p>
-							</div>
-							<div class="rounded-[1rem] border border-white/10 bg-neutral-950 px-4 py-3">
-								<p class="text-xs text-slate-500">Drivetrain</p>
-								<p class="mt-1 text-base font-semibold text-white">
-									{drivetrainLabels[item.car.drivetrain ?? ''] ?? item.car.drivetrain ?? 'Unknown'}
-								</p>
-							</div>
-							<div class="rounded-[1rem] border border-white/10 bg-neutral-950 px-4 py-3">
-								<p class="text-xs text-slate-500">Fuel type</p>
-								<p class="mt-1 text-base font-semibold text-white">{item.car.engine_fuel || 'Unknown'}</p>
-							</div>
-							<div class="rounded-[1rem] border border-white/10 bg-neutral-950 px-4 py-3">
-								<p class="text-xs text-slate-500">Odometer</p>
-								<p class="mt-1 text-base font-semibold text-white">{formatOdometer(item.car.odometer_value)}</p>
-							</div>
-							<div class="rounded-[1rem] border border-white/10 bg-neutral-950 px-4 py-3">
-								<p class="text-xs text-slate-500">Fuel use</p>
-								<p class="mt-1 text-base font-semibold text-white">
-									{formatFuelUsageEstimate(item.car.estimated_fuel_usage_l_per_100km)}
-								</p>
-							</div>
-							<div class="rounded-[1rem] border border-white/10 bg-neutral-950 px-4 py-3">
-								<p class="text-xs text-slate-500">5-year retention</p>
-								<p class="mt-1 text-base font-semibold text-white">
-									{summary.fiveYearPoint ? formatPercent(summary.fiveYearPoint.value_retention_percent, 1) : 'N/A'}
-								</p>
-							</div>
-						</div>
-
-						{#if item.isLoading}
-							<div class="mt-4 rounded-[1rem] border border-white/10 bg-neutral-950 px-4 py-3 text-sm text-slate-400">
-								Loading depreciation forecast...
-							</div>
-						{:else if item.error}
-							<div class="mt-4 rounded-[1rem] border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-								{item.error}
-							</div>
-						{:else}
-							<div class="mt-4 grid gap-2 sm:grid-cols-2">
-								<div class="rounded-[1rem] border border-white/10 bg-neutral-950 px-4 py-3">
-									<p class="text-xs text-slate-500">1-year loss</p>
-									<p class="mt-1 text-base font-semibold text-white">
-										{formatLoss(
-											summary.oneYearPoint
-												? item.car.price_usd - summary.oneYearPoint.predicted_price_usd
-												: null
-										)}
-									</p>
-								</div>
-								<div class="rounded-[1rem] border border-white/10 bg-neutral-950 px-4 py-3">
-									<p class="text-xs text-slate-500">3-year loss</p>
-									<p class="mt-1 text-base font-semibold text-white">
-										{formatLoss(
-											summary.threeYearPoint
-												? item.car.price_usd - summary.threeYearPoint.predicted_price_usd
-												: null
-										)}
-									</p>
-								</div>
-								<div class="rounded-[1rem] border border-white/10 bg-neutral-950 px-4 py-3">
-									<p class="text-xs text-slate-500">5-year loss</p>
-									<p class="mt-1 text-base font-semibold text-white">
-										{formatLoss(
-											summary.fiveYearPoint
-												? item.car.price_usd - summary.fiveYearPoint.predicted_price_usd
-												: null
-										)}
-									</p>
-								</div>
-								<div class="rounded-[1rem] border border-white/10 bg-neutral-950 px-4 py-3">
-									<p class="text-xs text-slate-500">Projected 5-year value</p>
-									<p class="mt-1 text-base font-semibold text-white">
-										{summary.fiveYearPoint ? formatCurrency(summary.fiveYearPoint.predicted_price_usd) : 'N/A'}
-									</p>
-								</div>
-							</div>
-						{/if}
-					</article>
-				{/each}
+			<div class="rounded-[1.2rem] border border-white/10 bg-black p-3 sm:p-4">
+				<Table.Root>
+					<Table.Header>
+						<Table.Row class="hover:bg-transparent">
+							<Table.Head class="sticky left-0 z-10 min-w-44 bg-black text-slate-400">Metric</Table.Head>
+							{#each comparisonRows as item, index (item.key)}
+								<Table.Head class="min-w-64 bg-black align-top">
+									<div class="flex items-start justify-between gap-3">
+										<div>
+											<div class="mb-2 inline-flex items-center gap-2 rounded-full border border-white/10 bg-neutral-950 px-3 py-1 text-xs font-semibold text-slate-300">
+												<span
+													class="inline-flex h-2.5 w-2.5 rounded-full"
+													style={`background: ${comparisonColors[index % comparisonColors.length]};`}
+												></span>
+												Car {index + 1}
+											</div>
+											<p class="text-base font-bold text-white">
+												{item.car.manufacturer_name} {item.car.model_name}
+											</p>
+											<p class="mt-1 text-sm font-normal text-slate-400">
+												{item.car.year_produced || 'Year unknown'} · {item.car.body_type}
+											</p>
+										</div>
+										<button
+											type="button"
+											class="inline-flex size-9 items-center justify-center rounded-full border border-white/10 bg-neutral-950 text-slate-400 transition hover:border-white/20 hover:text-white"
+											onclick={() => dispatch('removeComparison', item.key)}
+											aria-label={`Remove ${item.label} from comparison`}
+										>
+											<HugeiconsIcon icon={Cancel01Icon} class="size-4" />
+										</button>
+									</div>
+								</Table.Head>
+							{/each}
+						</Table.Row>
+					</Table.Header>
+					<Table.Body>
+						{#each rowDefinitions as row}
+							<Table.Row>
+								<Table.Cell class="sticky left-0 z-10 bg-black font-medium text-slate-300">
+									<span class="inline-flex items-center gap-2">
+										<HugeiconsIcon icon={row.icon} class="size-4 text-muted-foreground" />
+										<span>{row.label}</span>
+									</span>
+								</Table.Cell>
+								{#each comparisonRows as item}
+									<Table.Cell class={getCellClasses(item)}>
+										{item.values[row.key]}
+									</Table.Cell>
+								{/each}
+							</Table.Row>
+						{/each}
+					</Table.Body>
+				</Table.Root>
 			</div>
 
 			{#if comparisonItems.length === 1}
@@ -308,7 +310,7 @@
 		color: white;
 		font-weight: 600;
 	}
-	
+
 	:global(.comparison-tooltip-root .lc-tooltip-item-color) {
 		border-color: rgba(255, 255, 255, 0.8);
 	}

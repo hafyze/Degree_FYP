@@ -143,7 +143,7 @@
 	}
 </script>
 
-<section class="rounded-[1.5rem] border border-white/10 bg-neutral-950 p-4 sm:rounded-[2rem] sm:p-6">
+<section class="rounded-[1.5rem] border border-border bg-card p-4 text-foreground sm:rounded-[2rem] sm:p-6">
 	<form
 		class="space-y-4 sm:space-y-5"
 		onsubmit={(event) => {
@@ -154,14 +154,14 @@
 		<div class="space-y-3">
 			<div class="flex flex-col items-start justify-between gap-2 sm:flex-row sm:gap-3">
 				<div>
-					<span class="text-sm font-semibold text-slate-200">Budget range (USD)</span>
+					<span class="text-sm font-semibold text-foreground">Budget range (USD)</span>
 				</div>
 				<div class="grid w-full grid-cols-2 gap-2 text-xs sm:w-auto sm:text-sm">
-					<div class="rounded-full border border-white/10 bg-black px-3 py-1.5 text-slate-300">
-						Min: <span class="font-semibold text-white">{formatCurrency(budgetRange[0])}</span>
+					<div class="rounded-full border border-border bg-muted/40 px-3 py-1.5 text-muted-foreground">
+						Min: <span class="font-semibold text-foreground">{formatCurrency(budgetRange[0])}</span>
 					</div>
-					<div class="rounded-full border border-white/10 bg-black px-3 py-1.5 text-slate-300">
-						Max: <span class="font-semibold text-white">{formatCurrency(budgetRange[1])}</span>
+					<div class="rounded-full border border-border bg-muted/40 px-3 py-1.5 text-muted-foreground">
+						Max: <span class="font-semibold text-foreground">{formatCurrency(budgetRange[1])}</span>
 					</div>
 				</div>
 			</div>
@@ -177,28 +177,28 @@
 				onValueChange={(value) => dispatch('budgetRangeChange', value as [number, number])}
 			/>
 
-			<div class="flex justify-between text-xs text-slate-500">
+			<div class="flex justify-between text-xs text-muted-foreground">
 				{#each budgetTicks as tick}
 					<span>{tick.label}</span>
 				{/each}
 			</div>
 
 			{#if isLoadingBudgetRange}
-				<p class="text-sm text-slate-500">Loading budget range...</p>
+				<p class="text-sm text-muted-foreground">Loading budget range...</p>
 			{/if}
 		</div>
 
 		<div class="space-y-3">
 			<div class="flex flex-col items-start justify-between gap-2 sm:flex-row sm:gap-3">
 				<div>
-					<span class="text-sm font-semibold text-slate-200">Car age range</span>
+					<span class="text-sm font-semibold text-foreground">Car age range</span>
 				</div>
 				<div class="grid w-full grid-cols-2 gap-2 text-xs sm:w-auto sm:text-sm">
-					<div class="rounded-full border border-white/10 bg-black px-3 py-1.5 text-slate-300">
-						Min: <span class="font-semibold text-white">{ageRange[0]} years</span>
+					<div class="rounded-full border border-border bg-muted/40 px-3 py-1.5 text-muted-foreground">
+						Min: <span class="font-semibold text-foreground">{ageRange[0]} years</span>
 					</div>
-					<div class="rounded-full border border-white/10 bg-black px-3 py-1.5 text-slate-300">
-						Max: <span class="font-semibold text-white">{ageRange[1]} years</span>
+					<div class="rounded-full border border-border bg-muted/40 px-3 py-1.5 text-muted-foreground">
+						Max: <span class="font-semibold text-foreground">{ageRange[1]} years</span>
 					</div>
 				</div>
 			</div>
@@ -218,33 +218,33 @@
 				onValueChange={(value) => dispatch('ageRangeChange', value as [number, number])}
 			/>
 
-			<div class="flex justify-between text-xs text-slate-500">
+			<div class="flex justify-between text-xs text-muted-foreground">
 				{#each ageTicks as tick}
 					<span>{tick.label}</span>
 				{/each}
 			</div>
 
 			{#if isLoadingAgeRange}
-				<p class="text-sm text-slate-500">Loading age range...</p>
+				<p class="text-sm text-muted-foreground">Loading age range...</p>
 			{/if}
 		</div>
 
 		<div class="grid gap-5 sm:grid-cols-2">
 			<div class="space-y-2">
-				<span class="text-sm font-semibold text-slate-200">Preferred brand</span>
+				<span class="text-sm font-semibold text-foreground">Preferred brand</span>
 				<Popover.Root bind:open={brandOpen}>
 					<Popover.Trigger bind:ref={brandTriggerRef}>
 						{#snippet child({ props })}
 							<Button
 								{...props}
 								variant="outline"
-								class="h-11 w-full justify-between rounded-[1.2rem] border-white/10! bg-black! px-4 text-white! hover:bg-neutral-900! focus-visible:ring-0! focus-visible:outline-none!"
+								class="h-11 w-full justify-between rounded-[1.2rem] border-border! bg-background! px-4 text-foreground! hover:bg-muted/60! focus-visible:ring-0! focus-visible:outline-none!"
 								role="combobox"
 								aria-expanded={brandOpen}
 								disabled={isLoadingBrands}
 							>
 								{selectedBrandLabel || 'Any brand'}
-								<span class="text-xs text-slate-500">v</span>
+								<span class="text-xs text-muted-foreground">v</span>
 							</Button>
 						{/snippet}
 					</Popover.Trigger>
