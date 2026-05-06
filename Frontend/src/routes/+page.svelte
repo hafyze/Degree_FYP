@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
+	import ComparisonPanel from '$lib/components/comparison-panel.svelte';
 	import DepreciationForecastPanel from '$lib/components/depreciation-forecast-panel.svelte';
 	import RecommendationResultsPanel from '$lib/components/recommendation-results-panel.svelte';
 	import VehiclePreferencesForm from '$lib/components/vehicle-preferences-form.svelte';
@@ -9,7 +10,8 @@
 		Car02Icon,
 		ChartLineData02Icon,
 		FilterHorizontalIcon,
-		SearchIcon
+		SearchIcon,
+
 	} from '@hugeicons/core-free-icons';
 	import {
 		bodyTypeIconMap,
@@ -19,6 +21,9 @@
 		usageOptions
 	} from '$lib/features/vehicle-recommendation/helpers';
 	import type {
+		ComparisonChartPoint,
+		ComparisonForecastState,
+		ComparisonItemKey,
 		DepreciationMetric,
 		DepreciationPoint,
 		DepreciationViewPoint,
@@ -27,6 +32,10 @@
 		SelectOption,
 		UsageType
 	} from '$lib/features/vehicle-recommendation/types';
+	import {toggleMode} from "mode-watcher"
+  import Button from '$lib/components/ui/button/button.svelte';
+  import SunIcon from "@lucide/svelte/icons/sun";
+  import MoonIcon from "@lucide/svelte/icons/moon";
 
 	let budgetRange = $state<[number, number]>([0, 50000]);
 	let priceRangeMax = $state(50000);
@@ -65,8 +74,11 @@
 	let mobileTab = $state('filters');
 	let mobileDepreciationSection = $state<HTMLDivElement | null>(null);
 	let desktopDepreciationSection = $state<HTMLDivElement | null>(null);
+	let comparisonKeys = $state<ComparisonItemKey[]>([]);
+	let comparisonForecasts = $state<ComparisonForecastState[]>([]);
 
 	const recommendationsPerPage = 6;
+	const maxComparisonItems = 3;
 
 	const selectedUsageLabel = $derived(
 		usageOptions.find((option) => option.value === usageType)?.label ?? usageOptions[0].label
@@ -138,6 +150,69 @@
 			selectedRecommendationKey = '';
 			depreciationData = [];
 			depreciationError = '';
+			comparisonKeys = [];
+			comparisonForecasts = [];
+		}
+	});
+
+	$effect(() => {
+		if (comparisonKeys.length === 0) {
+			if (comparisonForecasts.length > 0) {
+				comparisonForecasts = [];
+			}
+			return;
+		}
+
+		const recommendationsByKey = new Map(
+			recommendations.map((car) => [getRecommendationKey(car), car] as const)
+		);
+
+		if (!comparisonKeys.every((key) => recommendationsByKey.has(key))) {
+			comparisonKeys = [];
+			comparisonForecasts = [];
+			return;
+		}
+
+		const nextComparisonForecasts = comparisonKeys.map((key) => {
+			const matchingCar = recommendationsByKey.get(key);
+			const existingForecast = comparisonForecasts.find((item) => item.key === key);
+
+			if (!matchingCar) {
+				return existingForecast;
+			}
+
+			if (!existingForecast) {
+				return {
+					key,
+					label: getComparisonLabel(matchingCar),
+					car: matchingCar,
+					points: [],
+					isLoading: false,
+					error: ''
+				};
+			}
+
+			return {
+				...existingForecast,
+				label: getComparisonLabel(matchingCar),
+				car: matchingCar
+			};
+		}).filter(Boolean) as ComparisonForecastState[];
+
+		const hasMeaningfulChange =
+			nextComparisonForecasts.length !== comparisonForecasts.length ||
+			nextComparisonForecasts.some((item, index) => {
+				const currentItem = comparisonForecasts[index];
+				return (
+					!currentItem ||
+					currentItem.key !== item.key ||
+					currentItem.label !== item.label ||
+					currentItem.car !== item.car
+				);
+			});
+
+		if (hasMeaningfulChange) {
+			comparisonForecasts = nextComparisonForecasts;
 		}
 	});
 
@@ -179,35 +254,27 @@
 		);
 	});
 
-	const depreciationViewData = $derived.by(() => {
-		if (!selectedRecommendation) {
-			return [] as DepreciationViewPoint[];
+	const comparisonChartData = $derived.by(() => {
+		const yearMap = new Map<string, ComparisonChartPoint>();
+
+		for (const item of comparisonForecasts) {
+			if (item.isLoading || item.error || item.points.length === 0) continue;
+
+			for (const point of item.points) {
+				const existingRow = yearMap.get(point.year) ?? { year: point.year };
+				existingRow[item.key] = point.predicted_price_usd;
+				yearMap.set(point.year, existingRow);
+			}
 		}
 
-		const baselinePrice = selectedRecommendation.price_usd;
-
-		return depreciationData.map((point, index, points) => {
-			const previousPoint = points[index - 1];
-			const annualLossUsd = previousPoint
-				? Math.max(0, previousPoint.predicted_price_usd - point.predicted_price_usd)
-				: 0;
-			const depreciationPercent =
-				baselinePrice > 0 ? ((baselinePrice - point.predicted_price_usd) / baselinePrice) * 100 : 0;
-			const valueRetentionPercent =
-				baselinePrice > 0 ? (point.predicted_price_usd / baselinePrice) * 100 : 0;
-
-			return {
-				...point,
-				chart_value:
-					depreciationMetric === 'price'
-						? point.predicted_price_usd
-						: Math.max(0, depreciationPercent),
-				depreciation_percent: Math.max(0, depreciationPercent),
-				annual_loss_usd: annualLossUsd,
-				value_retention_percent: Math.max(0, valueRetentionPercent)
-			};
-		});
+		return Array.from(yearMap.values()).sort((left, right) => Number(left.year) - Number(right.year));
 	});
+
+	const depreciationViewData = $derived.by(() =>
+		selectedRecommendation
+			? buildDepreciationViewData(depreciationData, selectedRecommendation.price_usd, depreciationMetric)
+			: ([] as DepreciationViewPoint[])
+	);
 
 	const depreciationCaption = $derived.by(() => {
 		if (!selectedRecommendation) {
@@ -440,6 +507,39 @@
 		fuelType = nextFuelType;
 	}
 
+	function getRecommendationKey(car: Recommendation) {
+		return `${car.manufacturer_name}-${car.model_name}-${car.year_produced}-${car.price_usd}`;
+	}
+
+	function getComparisonLabel(car: Recommendation) {
+		return `${car.manufacturer_name} ${car.model_name} ${car.year_produced || ''}`.trim();
+	}
+
+	function buildDepreciationViewData(
+		points: DepreciationPoint[],
+		baselinePrice: number,
+		metric: DepreciationMetric
+	) {
+		return points.map((point, index, sourcePoints) => {
+			const previousPoint = sourcePoints[index - 1];
+			const annualLossUsd = previousPoint
+				? Math.max(0, previousPoint.predicted_price_usd - point.predicted_price_usd)
+				: 0;
+			const depreciationPercent =
+				baselinePrice > 0 ? ((baselinePrice - point.predicted_price_usd) / baselinePrice) * 100 : 0;
+			const valueRetentionPercent =
+				baselinePrice > 0 ? (point.predicted_price_usd / baselinePrice) * 100 : 0;
+
+			return {
+				...point,
+				chart_value: metric === 'price' ? point.predicted_price_usd : Math.max(0, depreciationPercent),
+				depreciation_percent: Math.max(0, depreciationPercent),
+				annual_loss_usd: annualLossUsd,
+				value_retention_percent: Math.max(0, valueRetentionPercent)
+			};
+		});
+	}
+
 	async function loadDepreciationForecast(car: Recommendation) {
 		isLoadingDepreciation = true;
 		depreciationError = '';
@@ -495,6 +595,122 @@
 		}
 	}
 
+	async function loadComparisonForecast(car: Recommendation, comparisonKey: ComparisonItemKey) {
+		comparisonForecasts = comparisonForecasts.map((item) =>
+			item.key === comparisonKey
+				? {
+						...item,
+						isLoading: true,
+						error: ''
+					}
+				: item
+		);
+
+		try {
+			const response = await fetch('/api/depreciation', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({
+					manufacturer_name: car.manufacturer_name,
+					model_name: car.model_name,
+					body_type: car.body_type,
+					year_produced: Number(car.year_produced),
+					price_usd: car.price_usd,
+					usage_type: usageType,
+					horizon_years: 5
+				})
+			});
+
+			const data = await response.json();
+			if (!response.ok) {
+				throw new Error(
+					typeof data?.message === 'string' ? data.message : 'Unable to load comparison forecast.'
+				);
+			}
+
+			const normalizedPoints: DepreciationPoint[] = Array.isArray(data?.points)
+				? data.points.map((point: Record<string, unknown>) => ({
+						year: `${point.year ?? ''}`,
+						predicted_price_usd:
+							typeof point.predicted_price_usd === 'number'
+								? point.predicted_price_usd
+								: Number(point.predicted_price_usd ?? 0),
+						car_age: typeof point.car_age === 'number' ? point.car_age : Number(point.car_age ?? 0),
+						odometer_value:
+							typeof point.odometer_value === 'number'
+								? point.odometer_value
+								: Number(point.odometer_value ?? 0),
+						usage_type:
+							point.usage_type === 'daily' ||
+							point.usage_type === 'road-trips' ||
+							point.usage_type === 'weekend'
+								? point.usage_type
+								: usageType
+					}))
+				: [];
+
+			const nextPoints = buildDepreciationViewData(normalizedPoints, car.price_usd, 'price');
+
+			comparisonForecasts = comparisonForecasts.map((item) =>
+				item.key === comparisonKey
+					? {
+							...item,
+							points: nextPoints,
+							isLoading: false,
+							error: ''
+						}
+					: item
+			);
+		} catch (error) {
+			comparisonForecasts = comparisonForecasts.map((item) =>
+				item.key === comparisonKey
+					? {
+							...item,
+							points: [],
+							isLoading: false,
+							error:
+								error instanceof Error ? error.message : 'Unable to load comparison forecast.'
+						}
+					: item
+			);
+		}
+	}
+
+	function removeComparisonItem(comparisonKey: ComparisonItemKey) {
+		comparisonKeys = comparisonKeys.filter((key) => key !== comparisonKey);
+		comparisonForecasts = comparisonForecasts.filter((item) => item.key !== comparisonKey);
+	}
+
+	function toggleComparison(comparisonKey: ComparisonItemKey) {
+		if (comparisonKeys.includes(comparisonKey)) {
+			removeComparisonItem(comparisonKey);
+			return;
+		}
+
+		if (comparisonKeys.length >= maxComparisonItems) {
+			return;
+		}
+
+		const matchingCar = recommendations.find((car) => getRecommendationKey(car) === comparisonKey);
+		if (!matchingCar) {
+			return;
+		}
+
+		comparisonKeys = [...comparisonKeys, comparisonKey];
+		comparisonForecasts = [
+			...comparisonForecasts,
+			{
+				key: comparisonKey,
+				label: getComparisonLabel(matchingCar),
+				car: matchingCar,
+				points: [],
+				isLoading: true,
+				error: ''
+			}
+		];
+		void loadComparisonForecast(matchingCar, comparisonKey);
+	}
+
 	onMount(async () => {
 		await loadBudgetRange();
 		await loadAgeRange();
@@ -534,6 +750,15 @@
 				<div class="flex items-center justify-center text-white/90">
 					<HugeiconsIcon icon={Car02Icon} class="size-9 sm:size-12 lg:size-14" strokeWidth={1.8} />
 				</div> 
+				<Button onclick={toggleMode} variant="outline" size="icon">
+					<SunIcon
+						class="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all! dark:scale-0 dark:-rotate-90"
+					/>
+					<MoonIcon
+						class="absolute h-[1.2rem] w-[1.2rem] scale-0 rotate-90 transition-all! dark:scale-100 dark:rotate-0"
+					/>
+					<span class="sr-only">Toggle theme</span>
+				</Button>
 			</div>
 			<h1 class="text-lg font-semibold tracking-[-0.03em] text-slate-300 sm:text-2xl">
 				Find Your Next Car
@@ -630,10 +855,13 @@
 						{recommendationsPerPage}
 						{currentPage}
 						{selectedRecommendationKey}
+						{comparisonKeys}
+						{maxComparisonItems}
 						{recommendationSort}
 						on:sortChange={(event) => (recommendationSort = event.detail)}
 						on:pageChange={(event) => (currentPage = event.detail)}
 						on:selectRecommendation={(event) => selectRecommendation(event.detail)}
+						on:toggleComparison={(event) => toggleComparison(event.detail)}
 					/>
 				</Tabs.Content>
 
@@ -652,6 +880,13 @@
 					</div>
 				</Tabs.Content>
 			</Tabs.Root>
+
+			<ComparisonPanel
+				comparisonItems={comparisonForecasts}
+				{comparisonChartData}
+				{maxComparisonItems}
+				on:removeComparison={(event) => removeComparisonItem(event.detail)}
+			/>
 		</div>
 
 		<div class="hidden lg:block">
@@ -697,10 +932,13 @@
 					{recommendationsPerPage}
 					{currentPage}
 					{selectedRecommendationKey}
+					{comparisonKeys}
+					{maxComparisonItems}
 					{recommendationSort}
 					on:sortChange={(event) => (recommendationSort = event.detail)}
 					on:pageChange={(event) => (currentPage = event.detail)}
 					on:selectRecommendation={(event) => void selectRecommendation(event.detail)}
+					on:toggleComparison={(event) => toggleComparison(event.detail)}
 				/>
 			</div>
 
@@ -716,6 +954,13 @@
 					on:metricChange={(event) => (depreciationMetric = event.detail)}
 				/>
 			</div>
+
+			<ComparisonPanel
+				comparisonItems={comparisonForecasts}
+				{comparisonChartData}
+				{maxComparisonItems}
+				on:removeComparison={(event) => removeComparisonItem(event.detail)}
+			/>
 		</div>
 	</div>
 </div>

@@ -23,6 +23,8 @@
 		recommendationsPerPage: number;
 		currentPage: number;
 		selectedRecommendationKey: string;
+		comparisonKeys: string[];
+		maxComparisonItems: number;
 		recommendationSort: RecommendationSort;
 	};
 
@@ -33,6 +35,8 @@
 		recommendationsPerPage,
 		currentPage,
 		selectedRecommendationKey,
+		comparisonKeys,
+		maxComparisonItems,
 		recommendationSort
 	}: Props = $props();
 
@@ -40,6 +44,7 @@
 		sortChange: RecommendationSort;
 		pageChange: number;
 		selectRecommendation: string;
+		toggleComparison: string;
 	}>();
 
 	// svelte-ignore state_referenced_locally
@@ -71,6 +76,9 @@
 			<div class="mx-auto inline-flex items-center justify-center rounded-full border border-white/10 bg-black px-4 py-2 text-center text-sm text-slate-300 sm:mx-0">
 				{resultsStale ? 'Filters changed' : `${totalRecommendations} found`}
 			</div>
+			<div class="mx-auto inline-flex items-center justify-center rounded-full border border-white/10 bg-black px-4 py-2 text-center text-sm text-slate-300 sm:mx-0">
+				Compare {comparisonKeys.length}/{maxComparisonItems}
+			</div>
 			<label class="space-y-2">
 				<span class="text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase">Sort by</span>
 				<select
@@ -95,19 +103,24 @@
 				</div>
 			{:else if recommendations.length > 0}
 				{#each recommendations as car}
-					<button
-						type="button"
+					{@const recommendationKey = `${car.manufacturer_name}-${car.model_name}-${car.year_produced}-${car.price_usd}`}
+					{@const isCompared = comparisonKeys.includes(recommendationKey)}
+					{@const compareLimitReached = !isCompared && comparisonKeys.length >= maxComparisonItems}
+					<div
+						role="button"
+						tabindex="0"
 						class={`w-full rounded-[1.1rem] border bg-black p-3 text-left transition sm:rounded-[1.3rem] sm:p-3.5 ${
-							`${car.manufacturer_name}-${car.model_name}-${car.year_produced}-${car.price_usd}` ===
-							selectedRecommendationKey
+							recommendationKey === selectedRecommendationKey
 								? 'border-white/30 bg-white/5'
 								: 'border-white/10 hover:border-white/20'
 						}`}
-						onclick={() =>
-							dispatch(
-								'selectRecommendation',
-								`${car.manufacturer_name}-${car.model_name}-${car.year_produced}-${car.price_usd}`
-							)}
+						onclick={() => dispatch('selectRecommendation', recommendationKey)}
+						onkeydown={(event) => {
+							if (event.key === 'Enter' || event.key === ' ') {
+								event.preventDefault();
+								dispatch('selectRecommendation', recommendationKey);
+							}
+						}}
 					>
 						<div class="flex items-start gap-3">
 							{#if getBodyTypeIcon(car.body_type)}
@@ -133,10 +146,29 @@
 										{formatFuelUsageEstimate(car.estimated_fuel_usage_l_per_100km)}
 									</span>
 								</p>
-								<p class="mt-2 text-[15px] font-semibold text-white">${car.price_usd.toLocaleString()}</p>
+								<div class="mt-3 flex flex-wrap items-center gap-2">
+									<p class="text-[15px] font-semibold text-white">${car.price_usd.toLocaleString()}</p>
+									<button
+										type="button"
+										class={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+											isCompared
+												? 'border-white/20 bg-white text-black'
+												: compareLimitReached
+													? 'border-white/10 bg-neutral-950 text-slate-600'
+													: 'border-white/10 bg-neutral-950 text-slate-300 hover:border-white/20 hover:text-white'
+										}`}
+										disabled={compareLimitReached}
+										onclick={(event) => {
+											event.stopPropagation();
+											dispatch('toggleComparison', recommendationKey);
+										}}
+									>
+										{isCompared ? 'Compared' : compareLimitReached ? 'Limit reached' : 'Compare'}
+									</button>
+								</div>
 							</div>
 						</div>
-					</button>
+					</div>
 				{/each}
 			{:else}
 				<div class="rounded-[1.4rem] border border-dashed border-white/10 bg-black p-5 text-sm leading-6 text-slate-500">

@@ -53,6 +53,29 @@ export type DepreciationViewPoint = DepreciationPoint & {
 	value_retention_percent: number;
 };
 
+export type ComparisonItemKey = string;
+
+export type ComparisonForecastState = {
+	key: ComparisonItemKey;
+	label: string;
+	car: Recommendation;
+	points: DepreciationViewPoint[];
+	isLoading: boolean;
+	error: string;
+};
+
+export type ComparisonChartPoint = {
+	year: string;
+	[key: string]: string | number | null;
+};
+
+export type ComparisonForecastSummary = {
+	oneYearLoss: number | null;
+	threeYearLoss: number | null;
+	fiveYearLoss: number | null;
+	fiveYearRetentionPercent: number | null;
+};
+
 export type RecommendationSort =
 	| 'recommended'
 	| 'price-asc'
