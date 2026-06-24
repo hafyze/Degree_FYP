@@ -48,7 +48,7 @@
 		removeComparison: string;
 	}>();
 
-	const comparisonColors = ['#f8fafc', '#38bdf8', '#f97316'];
+	const comparisonColors = ['#0f172a', '#0284c7', '#ea580c'];
 
 	const readyComparisonItems = $derived(comparisonItems.filter((item) => !item.isLoading && !item.error));
 	const canRenderComparison = $derived(readyComparisonItems.length >= 2 && comparisonChartData.length > 0);
@@ -136,14 +136,14 @@
 		}
 
 		if (item.isLoading) {
-			return 'text-slate-400';
+		return 'text-muted-foreground';
 		}
 
-		return 'text-white';
+		return 'text-foreground';
 	}
 </script>
 
-<section class="rounded-[1.5rem] border border-border bg-card p-4 sm:rounded-[2rem] sm:p-6">
+<section class="comparison-panel rounded-[1.5rem] border border-border bg-card p-4 shadow-sm sm:rounded-[2rem] sm:p-6">
 	<div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
 		<div class="flex items-start gap-3">
 			<div class="flex size-11 items-center justify-center rounded-2xl border border-border bg-muted/50 text-foreground">
@@ -288,6 +288,29 @@
 </section>
 
 <style>
+	:global(html:not(.dark) .comparison-panel [class~='bg-black']),
+	:global(html:not(.dark) .comparison-panel [class~='bg-neutral-950']) {
+		background-color: var(--background) !important;
+	}
+
+	:global(html:not(.dark) .comparison-panel [class*='border-white']) {
+		border-color: var(--border) !important;
+	}
+
+	:global(html:not(.dark) .comparison-panel [class~='bg-white/5']) {
+		background-color: var(--muted) !important;
+	}
+
+	:global(html:not(.dark) .comparison-panel [class*='text-white']),
+	:global(html:not(.dark) .comparison-panel [class*='text-slate-200']),
+	:global(html:not(.dark) .comparison-panel [class*='text-slate-300']) {
+		color: var(--foreground) !important;
+	}
+
+	:global(html:not(.dark) .comparison-panel [class*='text-slate-400']),
+	:global(html:not(.dark) .comparison-panel [class*='text-slate-500']) {
+		color: var(--muted-foreground) !important;
+	}
 	:global(.comparison-tooltip-root) {
 		z-index: 20;
 		background: rgba(10, 10, 10, 0.96);

@@ -55,7 +55,7 @@
 	const chartConfig = {
 		depreciation: {
 			label: 'Predicted value',
-			color: '#f8fafc'
+			color: '#0f172a'
 		}
 	} satisfies Chart.ChartConfig;
 
@@ -81,7 +81,7 @@
 	);
 </script>
 
-<section id="depreciation-section" class="mt-4 rounded-[1.5rem] border border-border bg-card p-4 text-foreground sm:mt-6 sm:rounded-[2rem] sm:p-6">
+<section id="depreciation-section" class="depreciation-panel mt-4 rounded-[1.5rem] border border-border bg-card p-4 text-foreground shadow-sm sm:mt-6 sm:rounded-[2rem] sm:p-6">
 	<div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
 		<div class="flex items-start gap-3">
 			<div class="flex size-11 items-center justify-center rounded-2xl border border-border bg-muted/50 text-foreground">
@@ -440,6 +440,33 @@
 </section>
 
 <style>
+	:global(html:not(.dark) .depreciation-panel [class~='bg-black']),
+	:global(html:not(.dark) .depreciation-panel [class~='bg-neutral-950']) {
+		background-color: var(--background) !important;
+	}
+
+	:global(html:not(.dark) .depreciation-panel [class*='bg-black/']) {
+		background-color: color-mix(in oklch, var(--background) 88%, transparent) !important;
+	}
+
+	:global(html:not(.dark) .depreciation-panel [class*='border-white']) {
+		border-color: var(--border) !important;
+	}
+
+	:global(html:not(.dark) .depreciation-panel [class~='bg-white/5']) {
+		background-color: var(--muted) !important;
+	}
+
+	:global(html:not(.dark) .depreciation-panel [class*='text-white']),
+	:global(html:not(.dark) .depreciation-panel [class*='text-slate-200']),
+	:global(html:not(.dark) .depreciation-panel [class*='text-slate-300']) {
+		color: var(--foreground) !important;
+	}
+
+	:global(html:not(.dark) .depreciation-panel [class*='text-slate-400']),
+	:global(html:not(.dark) .depreciation-panel [class*='text-slate-500']) {
+		color: var(--muted-foreground) !important;
+	}
 	:global(.depreciation-tooltip-root) {
 		z-index: 20;
 		background: rgba(10, 10, 10, 0.96);

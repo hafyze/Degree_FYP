@@ -143,7 +143,7 @@
 	}
 </script>
 
-<section class="rounded-[1.5rem] border border-border bg-card p-4 text-foreground sm:rounded-[2rem] sm:p-6">
+<section class="rounded-[1.5rem] border border-border bg-card p-4 text-foreground shadow-sm sm:rounded-[2rem] sm:p-6">
 	<form
 		class="space-y-4 sm:space-y-5"
 		onsubmit={(event) => {
@@ -248,18 +248,18 @@
 							</Button>
 						{/snippet}
 					</Popover.Trigger>
-					<Popover.Content class="combobox-popover max-w-[calc(100vw-1.5rem)] w-(--bits-popover-anchor-width) border-white/10! bg-neutral-950! p-0 text-white! ring-0!">
+					<Popover.Content class="combobox-popover max-w-[calc(100vw-1.5rem)] w-(--bits-popover-anchor-width) border-border! bg-popover! p-0 text-popover-foreground! ring-0!">
 						<Command.Root>
-							<Command.Input placeholder="Search brand..." class="bg-transparent! text-white! placeholder:text-slate-500! focus-visible:ring-0! focus-visible:outline-none!" />
-							<Command.List class="bg-neutral-950">
+							<Command.Input placeholder="Search brand..." class="bg-transparent! text-foreground! placeholder:text-muted-foreground! focus-visible:ring-0! focus-visible:outline-none!" />
+							<Command.List class="bg-popover">
 								<Command.Empty>No brand found.</Command.Empty>
 								<Command.Group value="brands">
-									<Command.Item value="" class="text-slate-200 data-selected:bg-neutral-900! data-selected:text-white!" onSelect={() => void handleBrandChange('')}>
-										<span class={cn('mr-2 text-xs', preferredBrand ? 'text-transparent' : 'text-white')}>✓</span>
+									<Command.Item value="" class="text-foreground data-selected:bg-muted! data-selected:text-foreground!" onSelect={() => void handleBrandChange('')}>
+										<span class={cn('mr-2 text-xs', preferredBrand ? 'text-transparent' : 'text-primary')}>✓</span>
 										Any brand
 									</Command.Item>
 									{#each brandOptions as brand (brand.value)}
-										<Command.Item value={brand.value} class="text-slate-200 data-selected:bg-neutral-900! data-selected:text-white!" onSelect={() => void handleBrandChange(brand.value)}>
+										<Command.Item value={brand.value} class="text-foreground data-selected:bg-muted! data-selected:text-foreground!" onSelect={() => void handleBrandChange(brand.value)}>
 											<span class={cn('mr-2 text-xs', preferredBrand !== brand.value && 'text-transparent')}>✓</span>
 											{brand.label}
 										</Command.Item>
@@ -270,19 +270,19 @@
 					</Popover.Content>
 				</Popover.Root>
 				{#if isLoadingBrands}
-					<p class="text-sm text-slate-500">Loading brands...</p>
+					<p class="text-sm text-muted-foreground">Loading brands...</p>
 				{/if}
 			</div>
 
 			<div class="space-y-2">
-				<span class="text-sm font-semibold text-slate-200">Body type</span>
+				<span class="text-sm font-semibold text-foreground">Body type</span>
 				<Popover.Root bind:open={bodyTypeOpen}>
 					<Popover.Trigger bind:ref={bodyTypeTriggerRef}>
 						{#snippet child({ props })}
 							<Button
 								{...props}
 								variant="outline"
-								class="h-11 w-full justify-between rounded-[1.2rem] border-white/10! bg-black! px-4 text-white! hover:bg-neutral-900! focus-visible:ring-0! focus-visible:outline-none!"
+								class="h-11 w-full justify-between rounded-[1.2rem] border-border! bg-background! px-4 text-foreground! hover:bg-muted/70! focus-visible:ring-0! focus-visible:outline-none!"
 								role="combobox"
 								aria-expanded={bodyTypeOpen}
 								disabled={isLoadingBodyTypes}
@@ -293,14 +293,14 @@
 									{/if}
 									<span class="truncate">{selectedBodyTypeLabel || 'Any body type'}</span>
 								</span>
-								<span class="text-xs text-slate-500">v</span>
+								<span class="text-xs text-muted-foreground">v</span>
 							</Button>
 						{/snippet}
 					</Popover.Trigger>
-					<Popover.Content class="combobox-popover max-w-[calc(100vw-1.5rem)] w-(--bits-popover-anchor-width) border-white/10! bg-neutral-950! p-0 text-white! ring-0!">
+					<Popover.Content class="combobox-popover max-w-[calc(100vw-1.5rem)] w-(--bits-popover-anchor-width) border-border! bg-popover! p-0 text-popover-foreground! ring-0!">
 						<Command.Root>
-							<Command.Input placeholder="Search body type..." class="bg-transparent! text-white! placeholder:text-slate-500! focus-visible:ring-0! focus-visible:outline-none!" />
-							<Command.List class="bg-neutral-950">
+							<Command.Input placeholder="Search body type..." class="bg-transparent! text-foreground! placeholder:text-muted-foreground! focus-visible:ring-0! focus-visible:outline-none!" />
+							<Command.List class="bg-popover">
 								<Command.Empty>No body type found.</Command.Empty>
 								<Command.Group value="body-types">
 									<Command.Item value="" class="text-slate-200 data-selected:bg-neutral-900! data-selected:text-white!" onSelect={() => void handleBodyTypeChange('')}>
@@ -330,27 +330,27 @@
 
 		<div class="grid gap-5 sm:grid-cols-2">
 			<div class="space-y-2">
-				<span class="text-sm font-semibold text-slate-200">Drivetrain</span>
+				<span class="text-sm font-semibold text-foreground">Drivetrain</span>
 				<Popover.Root bind:open={drivetrainOpen}>
 					<Popover.Trigger bind:ref={drivetrainTriggerRef}>
 						{#snippet child({ props })}
 							<Button
 								{...props}
 								variant="outline"
-								class="h-11 w-full justify-between rounded-[1.2rem] border-white/10! bg-black! px-4 text-white! hover:bg-neutral-900! focus-visible:ring-0! focus-visible:outline-none!"
+								class="h-11 w-full justify-between rounded-[1.2rem] border-border! bg-background! px-4 text-foreground! hover:bg-muted/70! focus-visible:ring-0! focus-visible:outline-none!"
 								role="combobox"
 								aria-expanded={drivetrainOpen}
 								disabled={isLoadingDrivetrains}
 							>
 								{selectedDrivetrainLabel || 'Any drivetrain'}
-								<span class="text-xs text-slate-500">v</span>
+								<span class="text-xs text-muted-foreground">v</span>
 							</Button>
 						{/snippet}
 					</Popover.Trigger>
-					<Popover.Content class="combobox-popover max-w-[calc(100vw-1.5rem)] w-(--bits-popover-anchor-width) border-white/10! bg-neutral-950! p-0 text-white! ring-0!">
+					<Popover.Content class="combobox-popover max-w-[calc(100vw-1.5rem)] w-(--bits-popover-anchor-width) border-border! bg-popover! p-0 text-popover-foreground! ring-0!">
 						<Command.Root>
-							<Command.Input placeholder="Search drivetrain..." class="bg-transparent! text-white! placeholder:text-slate-500! focus-visible:ring-0! focus-visible:outline-none!" />
-							<Command.List class="bg-neutral-950">
+							<Command.Input placeholder="Search drivetrain..." class="bg-transparent! text-foreground! placeholder:text-muted-foreground! focus-visible:ring-0! focus-visible:outline-none!" />
+							<Command.List class="bg-popover">
 								<Command.Empty>No drivetrain found.</Command.Empty>
 								<Command.Group value="drivetrains">
 									<Command.Item value="" class="text-slate-200 data-selected:bg-neutral-900! data-selected:text-white!" onSelect={() => void handleDrivetrainChange('')}>
@@ -374,27 +374,27 @@
 			</div>
 
 			<div class="space-y-2">
-				<span class="text-sm font-semibold text-slate-200">Fuel type</span>
+				<span class="text-sm font-semibold text-foreground">Fuel type</span>
 				<Popover.Root bind:open={fuelTypeOpen}>
 					<Popover.Trigger bind:ref={fuelTypeTriggerRef}>
 						{#snippet child({ props })}
 							<Button
 								{...props}
 								variant="outline"
-								class="h-11 w-full justify-between rounded-[1.2rem] border-white/10! bg-black! px-4 text-white! hover:bg-neutral-900! focus-visible:ring-0! focus-visible:outline-none!"
+								class="h-11 w-full justify-between rounded-[1.2rem] border-border! bg-background! px-4 text-foreground! hover:bg-muted/70! focus-visible:ring-0! focus-visible:outline-none!"
 								role="combobox"
 								aria-expanded={fuelTypeOpen}
 								disabled={isLoadingFuelTypes}
 							>
 								{selectedFuelLabel || 'Any fuel type'}
-								<span class="text-xs text-slate-500">v</span>
+								<span class="text-xs text-muted-foreground">v</span>
 							</Button>
 						{/snippet}
 					</Popover.Trigger>
-					<Popover.Content class="combobox-popover max-w-[calc(100vw-1.5rem)] w-(--bits-popover-anchor-width) border-white/10! bg-neutral-950! p-0 text-white! ring-0!">
+					<Popover.Content class="combobox-popover max-w-[calc(100vw-1.5rem)] w-(--bits-popover-anchor-width) border-border! bg-popover! p-0 text-popover-foreground! ring-0!">
 						<Command.Root>
-							<Command.Input placeholder="Search fuel type..." class="bg-transparent! text-white! placeholder:text-slate-500! focus-visible:ring-0! focus-visible:outline-none!" />
-							<Command.List class="bg-neutral-950">
+							<Command.Input placeholder="Search fuel type..." class="bg-transparent! text-foreground! placeholder:text-muted-foreground! focus-visible:ring-0! focus-visible:outline-none!" />
+							<Command.List class="bg-popover">
 								<Command.Empty>No fuel type found.</Command.Empty>
 								<Command.Group value="fuel-types">
 									<Command.Item value="" class="text-slate-200 data-selected:bg-neutral-900! data-selected:text-white!" onSelect={() => void handleFuelTypeChange('')}>
@@ -420,7 +420,7 @@
 
 		<div class="space-y-3">
 			<div>
-				<p class="text-sm font-semibold text-slate-200">Usage type</p>
+				<p class="text-sm font-semibold text-foreground">Usage type</p>
 			</div>
 
 			<div class="grid gap-3 sm:grid-cols-3">
@@ -429,16 +429,16 @@
 						type="button"
 						class={`w-full rounded-[1.3rem] border px-4 py-3 text-left transition ${
 							usageType === option.value
-								? 'border-white/30 bg-white/5 shadow-[0_0_0_1px_rgba(255,255,255,0.05)]'
-								: 'border-white/10 bg-black hover:border-white/20'
+								? 'border-primary/45 bg-primary/5 shadow-sm'
+								: 'border-border bg-background hover:border-ring/70 hover:bg-muted/60'
 						}`}
 						onclick={() => dispatch('usageTypeChange', option.value)}
 					>
-						<div class="mb-3 flex size-10 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white">
+						<div class="mb-3 flex size-10 items-center justify-center rounded-2xl border border-border bg-muted text-foreground">
 							<HugeiconsIcon icon={usageIcons[option.value]} class="size-5" />
 						</div>
-						<p class="text-[15px] font-bold text-white">{option.label}</p>
-						<p class="mt-1 text-sm leading-5 text-slate-500">{option.description}</p>
+						<p class="text-[15px] font-bold text-foreground">{option.label}</p>
+						<p class="mt-1 text-sm leading-5 text-muted-foreground">{option.description}</p>
 					</button>
 				{/each}
 			</div>
@@ -450,8 +450,8 @@
 			</p>
 		{/if}
 
-		<div class="flex justify-end border-t border-white/10 pt-4 sm:pt-5">
-			<Button type="submit" size="lg" class="h-11 w-full rounded-full bg-white px-5 text-sm font-semibold text-black hover:bg-slate-200 sm:h-10 sm:w-auto" disabled={isSubmitting}>
+		<div class="flex justify-end border-t border-border pt-4 sm:pt-5">
+			<Button type="submit" size="lg" class="h-11 w-full rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 sm:h-10 sm:w-auto" disabled={isSubmitting}>
 				{isSubmitting ? 'Loading...' : 'Get recommendations'}
 			</Button>
 		</div>
@@ -460,7 +460,7 @@
 
 <style>
 	:global(.combobox-popover) {
-		box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
+		box-shadow: 0 8px 24px rgb(15 23 42 / 0.12);
 	}
 
 	:global(.combobox-popover [data-slot='command-input-wrapper']) {
@@ -468,35 +468,35 @@
 	}
 
 	:global(.combobox-popover [data-slot='input-group']) {
-		background: rgb(10 10 10);
-		border-color: rgba(255, 255, 255, 0.08);
+		background: var(--background);
+		border-color: var(--border);
 		box-shadow: none;
 	}
 
 	:global(.combobox-popover [data-slot='input-group']:focus-within) {
-		border-color: rgba(255, 255, 255, 0.16);
+		border-color: var(--ring);
 		box-shadow: none;
 	}
 
 	:global(.combobox-popover [data-slot='input-group']:has([data-slot='command-input']:focus-visible)) {
-		border-color: rgba(255, 255, 255, 0.08);
+		border-color: var(--border);
 		box-shadow: none;
 		outline: none;
 	}
 
 	:global(.combobox-popover [data-slot='input-group-addon']) {
-		color: rgb(113 113 122);
+		color: var(--muted-foreground);
 	}
 
 	:global(.combobox-popover [data-slot='command-input']) {
 		background: transparent;
-		color: white;
+		color: var(--foreground);
 		box-shadow: none;
 		outline: none;
 	}
 
 	:global(.combobox-popover [data-slot='command-input']::placeholder) {
-		color: rgb(113 113 122);
+		color: var(--muted-foreground);
 	}
 
 	:global(.combobox-popover [data-slot='command-list']) {
@@ -505,19 +505,19 @@
 
 	:global(.combobox-popover [data-slot='command-item']) {
 		border-radius: 1rem;
-		color: rgb(226 232 240);
+		color: var(--foreground);
 	}
 
 	:global(.combobox-popover [data-slot='command-item'][data-selected]) {
-		background: rgb(23 23 23);
-		color: white;
+		background: var(--muted);
+		color: var(--foreground);
 	}
 
 	:global([data-slot='slider-track']) {
-		background: rgb(23 23 23);
+		background: var(--muted);
 	}
 
 	:global([data-slot='slider-range']) {
-		background: white;
+		background: var(--primary);
 	}
 </style>

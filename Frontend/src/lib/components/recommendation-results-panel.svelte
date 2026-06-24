@@ -61,7 +61,7 @@
 	});
 </script>
 
-<aside class="rounded-[1.5rem] border border-border bg-card p-4 sm:rounded-[2rem] sm:p-6">
+<aside class="rounded-[1.5rem] border border-border bg-card p-4 shadow-sm sm:rounded-[2rem] sm:p-6">
 	<div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
 		<div class="flex items-start gap-3">
 			<div class="flex size-11 items-center justify-center rounded-2xl border border-border bg-muted/50 text-foreground">
@@ -109,10 +109,10 @@
 					<div
 						role="button"
 						tabindex="0"
-						class={`w-full rounded-[1.1rem] border bg-black p-3 text-left transition sm:rounded-[1.3rem] sm:p-3.5 ${
+						class={`w-full rounded-[1.1rem] border bg-background p-3 text-left transition sm:rounded-[1.3rem] sm:p-3.5 ${
 							recommendationKey === selectedRecommendationKey
-								? 'border-white/30 bg-white/5'
-								: 'border-white/10 hover:border-white/20'
+								? 'border-primary/45 bg-primary/5 shadow-sm'
+								: 'border-border hover:border-ring/70 hover:bg-muted/60'
 						}`}
 						onclick={() => dispatch('selectRecommendation', recommendationKey)}
 						onkeydown={(event) => {
@@ -127,11 +127,11 @@
 								<img src={getBodyTypeIcon(car.body_type)} alt={car.body_type} class="mt-1 h-9 w-9 object-contain opacity-85" />
 							{/if}
 							<div class="min-w-0 flex-1">
-								<p class="text-base font-bold text-white">{car.manufacturer_name} {car.model_name}</p>
-								<p class="mt-1 text-sm leading-5 text-slate-400">
+								<p class="text-base font-bold text-foreground">{car.manufacturer_name} {car.model_name}</p>
+								<p class="mt-1 text-sm leading-5 text-muted-foreground">
 									{car.body_type} · {car.year_produced || 'Year unknown'} · {car.transmission || 'Transmission unknown'}
 								</p>
-								<p class="mt-2 text-sm text-slate-500">
+								<p class="mt-2 text-sm text-muted-foreground">
 									{drivetrainLabels[car.drivetrain ?? ''] ?? car.drivetrain ?? 'Drivetrain unknown'}
 								</p>
 								<div class="mt-1 flex items-center gap-2 text-sm">
@@ -140,22 +140,22 @@
 										{car.engine_fuel || 'Fuel unknown'}
 									</span>
 								</div>
-								<p class="mt-2 text-sm text-slate-300">
+								<p class="mt-2 text-sm text-muted-foreground">
 									Estimated fuel use:
-									<span class="font-semibold text-white">
+									<span class="font-semibold text-foreground">
 										{formatFuelUsageEstimate(car.estimated_fuel_usage_l_per_100km)}
 									</span>
 								</p>
 								<div class="mt-3 flex flex-wrap items-center gap-2">
-									<p class="text-[15px] font-semibold text-white">${car.price_usd.toLocaleString()}</p>
+									<p class="text-[15px] font-semibold text-foreground">${car.price_usd.toLocaleString()}</p>
 									<button
 										type="button"
 										class={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
 											isCompared
-												? 'border-white/20 bg-white text-black'
-												: compareLimitReached
-													? 'border-white/10 bg-neutral-950 text-slate-600'
-													: 'border-white/10 bg-neutral-950 text-slate-300 hover:border-white/20 hover:text-white'
+											? 'border-primary bg-primary text-primary-foreground'
+											: compareLimitReached
+												? 'border-border bg-muted text-muted-foreground'
+												: 'border-border bg-background text-foreground hover:border-ring/70 hover:bg-muted'
 										}`}
 										disabled={compareLimitReached}
 										onclick={(event) => {
@@ -171,7 +171,7 @@
 					</div>
 				{/each}
 			{:else}
-				<div class="rounded-[1.4rem] border border-dashed border-white/10 bg-black p-5 text-sm leading-6 text-slate-500">
+				<div class="rounded-[1.4rem] border border-dashed border-border bg-muted/40 p-5 text-sm leading-6 text-muted-foreground">
 					Submit the form to see matching cars.
 				</div>
 			{/if}
@@ -179,31 +179,31 @@
 	</ScrollArea.Root>
 
 	{#if !resultsStale && totalRecommendations > recommendationsPerPage}
-		<div class="mt-4 border-t border-white/10 pt-4">
+		<div class="mt-4 border-t border-border pt-4">
 			<Pagination.Root count={totalRecommendations} perPage={recommendationsPerPage} bind:page={paginationPage} siblingCount={1}>
 				{#snippet child({ pages })}
 					<Pagination.Content class="flex-wrap justify-center gap-1.5">
 						<Pagination.Item>
 							<Pagination.PrevButton
-								class="border-white/10 bg-black text-slate-300 hover:bg-neutral-900 hover:text-white disabled:opacity-40"
+								class="border-border bg-background text-foreground hover:bg-muted disabled:opacity-40"
 							/>
 						</Pagination.Item>
 						{#each pages as page (page.key)}
 							<Pagination.Item>
 								{#if page.type === 'ellipsis'}
-									<Pagination.Ellipsis class="text-slate-500" />
+									<Pagination.Ellipsis class="text-muted-foreground" />
 								{:else}
 									<Pagination.Link
 										{page}
 										isActive={paginationPage === page.value}
-										class="border-white/10 bg-black text-slate-300 hover:bg-neutral-900 hover:text-white data-active:bg-white data-active:text-black"
+										class="border-border bg-background text-foreground hover:bg-muted data-active:border-primary data-active:bg-primary data-active:text-primary-foreground"
 									/>
 								{/if}
 							</Pagination.Item>
 						{/each}
 						<Pagination.Item>
 							<Pagination.NextButton
-								class="border-white/10 bg-black text-slate-300 hover:bg-neutral-900 hover:text-white disabled:opacity-40"
+								class="border-border bg-background text-foreground hover:bg-muted disabled:opacity-40"
 							/>
 						</Pagination.Item>
 					</Pagination.Content>
