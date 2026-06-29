@@ -26,7 +26,6 @@ This repository contains the application code for my Final Year Project. The foc
 Degree_FYP/
 |- Frontend/          # SvelteKit application and UI logic
 |- Backend/           # FastAPI service, model loading, datasets
-|- paper.tex          # Draft paper for the accompanying FYP write-up
 ```
 
 ## Key features
