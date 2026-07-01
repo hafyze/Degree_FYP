@@ -55,7 +55,10 @@
 	const chartConfig = {
 		depreciation: {
 			label: 'Predicted value',
-			color: '#0f172a'
+			theme: {
+				light: '#0f172a',
+				dark: '#e5e7eb'
+			}
 		}
 	} satisfies Chart.ChartConfig;
 
@@ -360,8 +363,8 @@
 					x="year"
 					y="chart_value"
 					highlight={{
-						lines: { stroke: 'rgba(148, 163, 184, 0.4)' },
-						points: { r: 6, fill: '#ffffff', stroke: '#0f172a', strokeWidth: 2 }
+						lines: { stroke: 'color-mix(in oklch, var(--foreground) 26%, transparent)' },
+						points: { r: 6, fill: 'var(--background)', stroke: 'var(--color-depreciation)', strokeWidth: 2 }
 					}}
 					series={[
 						{
@@ -492,5 +495,25 @@
 
 	:global(.depreciation-tooltip-root .lc-tooltip-item-color) {
 		border-color: rgba(255, 255, 255, 0.8);
+	}
+
+	:global(html:not(.dark) .depreciation-tooltip-root) {
+		background: color-mix(in oklch, var(--background) 98%, white) !important;
+		border-color: var(--border) !important;
+		box-shadow: 0 18px 42px rgba(15, 23, 42, 0.16);
+		color: var(--foreground) !important;
+	}
+
+	:global(html:not(.dark) .depreciation-tooltip-root .lc-tooltip-header),
+	:global(html:not(.dark) .depreciation-tooltip-root .lc-tooltip-item-value) {
+		color: var(--foreground) !important;
+	}
+
+	:global(html:not(.dark) .depreciation-tooltip-root .lc-tooltip-item-label) {
+		color: var(--muted-foreground) !important;
+	}
+
+	:global(html:not(.dark) .depreciation-tooltip-root .lc-tooltip-item-color) {
+		border-color: color-mix(in oklch, var(--foreground) 22%, transparent) !important;
 	}
 </style>

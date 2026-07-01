@@ -143,7 +143,7 @@
 	}
 </script>
 
-<section class="rounded-[1.5rem] border border-border bg-card p-4 text-foreground shadow-sm sm:rounded-[2rem] sm:p-6">
+<section class="vehicle-preferences-form rounded-[1.5rem] border border-border bg-card p-4 text-foreground shadow-sm sm:rounded-[2rem] sm:p-6">
 	<form
 		class="space-y-4 sm:space-y-5"
 		onsubmit={(event) => {
@@ -451,7 +451,7 @@
 		{/if}
 
 		<div class="flex justify-end border-t border-border pt-4 sm:pt-5">
-			<Button type="submit" size="lg" class="h-11 w-full rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 sm:h-10 sm:w-auto" disabled={isSubmitting}>
+			<Button type="submit" size="lg" class="h-11 w-full rounded-full border border-border bg-muted px-5 text-sm font-semibold text-foreground hover:bg-muted/80 sm:h-10 sm:w-auto" disabled={isSubmitting}>
 				{isSubmitting ? 'Loading...' : 'Get recommendations'}
 			</Button>
 		</div>
@@ -513,11 +513,16 @@
 		color: var(--foreground);
 	}
 
-	:global([data-slot='slider-track']) {
-		background: var(--muted);
+	:global(.vehicle-preferences-form [data-slot='slider-track']) {
+		background: color-mix(in oklch, var(--foreground) 10%, transparent);
 	}
 
-	:global([data-slot='slider-range']) {
-		background: var(--primary);
+	:global(.vehicle-preferences-form [data-slot='slider-range']) {
+		background: color-mix(in oklch, var(--foreground) 28%, transparent);
+	}
+
+	:global(.vehicle-preferences-form [data-slot='slider-thumb']) {
+		border-color: var(--border);
+		background: var(--background);
 	}
 </style>

@@ -52,14 +52,14 @@ get along, so we shut typescript up by casting `value` to `never`.
 			<SliderPrimitive.Thumb
 				data-slot="slider-thumb"
 				index={thumb.index}
-				class="border-primary ring-ring/50 size-4 rounded-4xl border bg-white shadow-sm transition-colors hover:ring-4 focus-visible:ring-4 focus-visible:outline-hidden block shrink-0 select-none disabled:pointer-events-none disabled:opacity-50"
+				class="border-border bg-background ring-ring/50 size-4 rounded-4xl border shadow-sm transition-colors hover:ring-4 focus-visible:ring-4 focus-visible:outline-hidden block shrink-0 select-none disabled:pointer-events-none disabled:opacity-50"
 			>
 				{#snippet children({ active })}
 					{#if showThumbLabels && active}
 						<SliderPrimitive.ThumbLabel
 							index={thumb.index}
 							position="top"
-							class="pointer-events-none rounded-full border border-white/10 bg-black px-3 py-1 text-xs font-semibold whitespace-nowrap text-white shadow-lg"
+							class="pointer-events-none rounded-full border border-border bg-popover px-3 py-1 text-xs font-semibold whitespace-nowrap text-popover-foreground shadow-lg"
 						>
 							{thumbLabelFormatter(thumb.value, thumb.index, value as SliderValue)}
 						</SliderPrimitive.ThumbLabel>

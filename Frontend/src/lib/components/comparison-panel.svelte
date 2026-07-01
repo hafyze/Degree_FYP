@@ -48,7 +48,11 @@
 		removeComparison: string;
 	}>();
 
-	const comparisonColors = ['#0f172a', '#0284c7', '#ea580c'];
+	const comparisonColors = [
+		{ light: '#0f172a', dark: '#e5e7eb' },
+		{ light: '#0284c7', dark: '#60a5fa' },
+		{ light: '#ea580c', dark: '#fb923c' }
+	];
 
 	const readyComparisonItems = $derived(comparisonItems.filter((item) => !item.isLoading && !item.error));
 	const canRenderComparison = $derived(readyComparisonItems.length >= 2 && comparisonChartData.length > 0);
@@ -59,7 +63,7 @@
 				item.key,
 				{
 					label: item.label,
-					color: comparisonColors[index % comparisonColors.length]
+					theme: comparisonColors[index % comparisonColors.length]
 				}
 			])
 		)
@@ -141,6 +145,11 @@
 
 		return 'text-foreground';
 	}
+
+	function getComparisonColorStyle(index: number) {
+		const color = comparisonColors[index % comparisonColors.length];
+		return `--comparison-color-light: ${color.light}; --comparison-color-dark: ${color.dark};`;
+	}
 </script>
 
 <section class="comparison-panel rounded-[1.5rem] border border-border bg-card p-4 shadow-sm sm:rounded-[2rem] sm:p-6">
@@ -178,8 +187,8 @@
 										<div>
 											<div class="mb-2 inline-flex items-center gap-2 rounded-full border border-white/10 bg-neutral-950 px-3 py-1 text-xs font-semibold text-slate-300">
 												<span
-													class="inline-flex h-2.5 w-2.5 rounded-full"
-													style={`background: ${comparisonColors[index % comparisonColors.length]};`}
+													class="comparison-swatch inline-flex h-2.5 w-2.5 rounded-full"
+													style={getComparisonColorStyle(index)}
 												></span>
 												Car {index + 1}
 											</div>
@@ -249,8 +258,8 @@
 							y={readyComparisonItems[0]?.key}
 							series={chartSeries}
 							highlight={{
-								lines: { stroke: 'rgba(148, 163, 184, 0.4)' },
-								points: { r: 6, fill: '#ffffff', stroke: '#0f172a', strokeWidth: 2 }
+								lines: { stroke: 'color-mix(in oklch, var(--foreground) 26%, transparent)' },
+								points: { r: 6, fill: 'var(--background)', stroke: 'currentColor', strokeWidth: 2 }
 							}}
 							tooltipContext={{ mode: 'quadtree-x' }}
 							props={{
@@ -288,6 +297,14 @@
 </section>
 
 <style>
+	.comparison-swatch {
+		background: var(--comparison-color-light);
+	}
+
+	:global(.dark) .comparison-swatch {
+		background: var(--comparison-color-dark);
+	}
+
 	:global(html:not(.dark) .comparison-panel [class~='bg-black']),
 	:global(html:not(.dark) .comparison-panel [class~='bg-neutral-950']) {
 		background-color: var(--background) !important;
@@ -336,5 +353,25 @@
 
 	:global(.comparison-tooltip-root .lc-tooltip-item-color) {
 		border-color: rgba(255, 255, 255, 0.8);
+	}
+
+	:global(html:not(.dark) .comparison-tooltip-root) {
+		background: color-mix(in oklch, var(--background) 98%, white) !important;
+		border-color: var(--border) !important;
+		box-shadow: 0 18px 42px rgba(15, 23, 42, 0.16);
+		color: var(--foreground) !important;
+	}
+
+	:global(html:not(.dark) .comparison-tooltip-root .lc-tooltip-header),
+	:global(html:not(.dark) .comparison-tooltip-root .lc-tooltip-item-value) {
+		color: var(--foreground) !important;
+	}
+
+	:global(html:not(.dark) .comparison-tooltip-root .lc-tooltip-item-label) {
+		color: var(--muted-foreground) !important;
+	}
+
+	:global(html:not(.dark) .comparison-tooltip-root .lc-tooltip-item-color) {
+		border-color: color-mix(in oklch, var(--foreground) 22%, transparent) !important;
 	}
 </style>
